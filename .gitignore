@@ -1,1 +1,6 @@
 **/__pycache__/*
+build/
+dist/
+sqlitedao.egg-info/
+**/*.swp
+test.db

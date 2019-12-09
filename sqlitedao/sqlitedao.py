@@ -31,12 +31,26 @@ class SqliteDao:
         cursor.close()
         return not (table == None)
 
-    # Print all tables in the database, name only
-    def print_tables(self):
-        query = "SELECT name from sqlite_master WHERE type='table'"
+    def get_schema(self, info="name", type="table"):
+        query = "SELECT {} from sqlite_master WHERE type='{}'".format(info, type)
         cursor = self.conn.execute(query)
+        return [dict(t) for t in cursor.fetchall()]
+
+    # Print all tables in the database, name only
+    def print_tables(self, info="name"):
+        query = "SELECT {} from sqlite_master WHERE type='table'".format(info)
+        cursor = self.conn.execute(query)
+        print("FOUND FOLLOWING TABLES: ")
         print("\n".join([str(dict(t)) for t in cursor.fetchall()]))
         cursor.close()
+
+    def drop_table(self, table_name):
+        query = "DROP TABLE {}".format(table_name)
+        self.conn.execute(query)
+
+    def drop_index(self, index_name):
+        query = "DROP TABLE {}".format(index_name)
+        self.conn.execute(query)
 
     def create_table(self, table_name, column_dict, index_dict=None):
         extended_feature = isinstance(column_dict, ColumnDict)
@@ -56,7 +70,8 @@ class SqliteDao:
                 if not isinstance(v, list):
                     raise ValueError("Index need a list of columns")
                 index_string = ",".join(v)
-                index_query = "CREATE INDEX IF NOT EXISTS {} ON {} ({})".format(k, table_name, index_string)
+                index_name = "idx_{}_".format(table_name) + k
+                index_query = "CREATE INDEX IF NOT EXISTS {} ON {} ({})".format(index_name, table_name, index_string)
                 print("Execute CREATE INDEX query: {}".format(index_query))
                 cursor.execute(index_query)
         self.conn.commit()
@@ -246,15 +261,13 @@ class ColumnDict(dict):
 
     @staticmethod
     def to_query(key, value):
-        query = "{} {}".format(key, value["data_type"])
-        if value["primary"]:
-            query += " PRIMARY KEY"
-        if value[not_null]:
-            query += " NOT NULL"
+        query = "{} {} ".format(key, value["type"])
+        if value["additional_attributes"]:
+            query += value["additional_attributes"]
         return query
 
-    def add_column(column_name, data_type, primary_key=False, not_null=False):
-        self[column_name] = {"type": data_type, "primary": primary_key, "notnull": not_null}
+    def add_column(self, column_name, data_type, additional_attributes=None):
+        self[column_name] = {"type": data_type, "additional_attributes": additional_attributes}
         return self
 
 
