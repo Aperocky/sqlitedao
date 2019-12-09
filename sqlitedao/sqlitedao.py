@@ -150,10 +150,10 @@ class SqliteDao:
             search_strings.append("{}=?".format(k))
             value_strings.append(v)
         query += ", ".join(set_strings) + " WHERE "
-        query += " AND ".join(search_strings) + " LIMIT 1"
+        query += " AND ".join(search_strings)
         print("Running UPDATE query: {}".format(query))
         cursor = self.conn.cursor()
-        cursor.execute(query, row_values)
+        cursor.execute(query, value_strings)
         self.conn.commit()
         cursor.close()
 
@@ -186,10 +186,11 @@ class SqliteDao:
             value_strings.append(v)
         for k, v in search_dict.items():
             if extended_feature:
-                key_strings.append("{} {} ?".format(v["value"], v["operator"]))
+                key_strings.append("{} {} ?".format(k, v["operator"]))
+                value_strings.append(v["value"])
             else:
                 key_strings.append("{} = ?".format(k))
-            value_strings.append(v)
+                value_strings.append(v)
         query += ", ".join(set_strings)
         if search_strings:
             query += " WHERE "
