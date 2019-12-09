@@ -62,7 +62,6 @@ class SqliteDao:
             else:
                 columns.append("{} {}".format(k, v))
         query += ", ".join(columns) + " )"
-        print("Execute CREATE TABLE query: {}".format(query))
         cursor = self.conn.cursor()
         cursor.execute(query)
         if index_dict:
@@ -72,7 +71,6 @@ class SqliteDao:
                 index_string = ",".join(v)
                 index_name = "idx_{}_".format(table_name) + k
                 index_query = "CREATE INDEX IF NOT EXISTS {} ON {} ({})".format(index_name, table_name, index_string)
-                print("Execute CREATE INDEX query: {}".format(index_query))
                 cursor.execute(index_query)
         self.conn.commit()
         cursor.close()
@@ -84,20 +82,25 @@ class SqliteDao:
         query = "SELECT * from {}".format(table_name)
         if not search_dict:
             cursor.execute(query)
-            return cursor
+            result = [dict(row) for row in cursor.fetchall()]
+            cursor.close()
+            return result
         query += " WHERE "
         key_strings = []
         value_strings = []
         for k, v in search_dict.items():
             if extended_feature:
-                key_strings.append("{} {} ?".format(v["value"], v["operator"]))
+                key_strings.append("{} {} ?".format(k, v["operator"]))
+                value_strings.append(v["value"])
             else:
                 key_strings.append("{} = ?".format(k))
-            value_strings.append(v)
+                value_strings.append(v)
         query += " AND ".join(key_strings)
         print("Running READ query: {}".format(query))
         cursor.execute(query, value_strings)
-        return cursor
+        result = [dict(row) for row in cursor.fetchall()]
+        cursor.close()
+        return result
 
     def insert_row(self, table_name, row_tuple):
         # Row values are a dictionary representing the row.
@@ -105,7 +108,7 @@ class SqliteDao:
             raise ValueError("row_tuple should be a dictionary")
         query = "INSERT INTO {} ".format(table_name)
         keys = row_tuple.keys()
-        values = row_tuple.values()
+        values = list(row_tuple.values())
         query += "(" + ",".join(keys) + ")"
         query += " VALUES "
         query += "(" + ",".join(["?"] * len(row_tuple)) + ")"
@@ -121,7 +124,7 @@ class SqliteDao:
         for row_tuple in row_tuples:
             if row_tuple.keys() != keys:
                 raise ValueError("batch should have same keys")
-            multiple_values.append(row_tuple.values())
+            multiple_values.append(list(row_tuple.values()))
         query = "INSERT INTO {} ".format(table_name)
         query += "(" + ",".join(keys) + ")"
         query += " VALUES "
@@ -232,11 +235,9 @@ class SqliteDao:
 
     # Find item based on a index only table_item, returns the full item if found
     def find_item(self, table_item):
-        cursor = self.search_table(table_item.get_table(), table_item.get_index_dict())
-        row = cursor.fetchone()
-        if row:
-            row_dict = dict(row)
-            return type(table_item)(row_dict)
+        result = self.search_table(table_item.get_table(), table_item.get_index_dict())
+        if result:
+            return type(table_item)(result[0])
         return None
 
     def delete_item(self, table_item):
@@ -252,7 +253,7 @@ class SqliteDao:
 
 class SearchDict(dict):
 
-    def add_filter(column_name, value, operator="="):
+    def add_filter(self, column_name, value, operator="="):
         self[column_name] = {"value": value, "operator": operator}
         return self
 
