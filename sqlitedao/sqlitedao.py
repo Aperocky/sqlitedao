@@ -201,26 +201,21 @@ class SqliteDao:
         self.conn.commit()
         cursor.close()
 
-    def delete_rows(self, table_name, search_dict, limit=None):
+    def delete_rows(self, table_name, search_dict):
         extended_feature = isinstance(search_dict, SearchDict)
         cursor = self.conn.cursor()
         query = "DELETE FROM {}".format(table_name)
-        if not search_dict:
-            cursor.execute(query)
-        query += " WHERE "
         key_strings = []
         value_strings = []
-        for k, v in search_dict.items():
-            if extended_feature:
-                key_strings.append("{} {} ?".format(v["value"], v["operator"]))
-            else:
-                key_strings.append("{} = ?".format(k))
-            value_strings.append(v)
-        query += " AND ".join(key_strings)
-        if limit is not None:
-            if not isinstance(limit, int):
-                raise ValueError("Limit need to be a number")
-            query += " LIMIT {}".format(limit)
+        if len(search_dict) > 0:
+            query += " WHERE "
+            for k, v in search_dict.items():
+                if extended_feature:
+                    key_strings.append("{} {} ?".format(v["value"], v["operator"]))
+                else:
+                    key_strings.append("{} = ?".format(k))
+                value_strings.append(v)
+            query += " AND ".join(key_strings)
         print("Running DELETE query: {}".format(query))
         cursor.execute(query, value_strings)
 

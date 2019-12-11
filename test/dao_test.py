@@ -158,3 +158,10 @@ def test_batch_update(xdao):
     xdao.update_many(TEST_TABLE_NAME, update_age, indexes)
     aged_players = xdao.search_table(TEST_TABLE_NAME, {})
 
+def test_delete_rows(xdao):
+    xdao.delete_rows(TEST_TABLE_NAME, {"name": "Michael Jordan"})
+    assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 2
+    xdao.insert_row(TEST_TABLE_NAME, jordan)
+    xdao.delete_rows(TEST_TABLE_NAME, {})
+    assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 0
+
