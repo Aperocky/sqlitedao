@@ -76,7 +76,7 @@ class SqliteDao:
         cursor.close()
 
     # fetch rows where search_dict is satisfied
-    def search_table(self, table_name, search_dict):
+    def search_table(self, table_name, search_dict, limit=None):
         extended_feature = isinstance(search_dict, SearchDict)
         cursor = self.conn.cursor()
         query = "SELECT * from {}".format(table_name)
@@ -96,6 +96,8 @@ class SqliteDao:
                 key_strings.append("{} = ?".format(k))
                 value_strings.append(v)
         query += " AND ".join(key_strings)
+        if limit is not None:
+            query += " LIMIT {}".format(limit)
         print("Running READ query: {}".format(query))
         cursor.execute(query, value_strings)
         result = [dict(row) for row in cursor.fetchall()]
@@ -157,6 +159,7 @@ class SqliteDao:
         self.conn.commit()
         cursor.close()
 
+    # Fills multiple rows one at the time.
     def update_many(self, table_name, update_dicts, search_dicts):
         # Search dict will always be basic dictionary this time.
         # Sanitize inputs! Assumed to be only used for table items.
@@ -173,6 +176,7 @@ class SqliteDao:
         self.conn.commit()
         cursor.close()
 
+    # For backfilling purpose, fills multiple matching rows at the same time.
     def update_rows(self, table_name, update_dict, search_dict):
         extended_feature = isinstance(search_dict, SearchDict)
         if not update_dict:
@@ -197,7 +201,7 @@ class SqliteDao:
             query += " AND ".join(search_strings)
         print("Running UPDATE query: {}".format(query))
         cursor = self.conn.cursor()
-        cursor.execute(query, row_values)
+        cursor.execute(query, value_strings)
         self.conn.commit()
         cursor.close()
 

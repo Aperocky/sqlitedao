@@ -143,6 +143,8 @@ def test_batch_insert(dao):
 def test_advanced_search_query(xdao):
     search = SearchDict().add_filter("age", 40, operator="<")
     assert lebron == xdao.search_table(TEST_TABLE_NAME, search)[0]
+    search = SearchDict().add_filter("age", 40, operator=">")
+    assert len(xdao.search_table(TEST_TABLE_NAME, search, limit=1)) == 1
 
 def test_update(xdao):
     # LeBron has aged
@@ -157,6 +159,12 @@ def test_batch_update(xdao):
     indexes = [{"name": p["name"]} for p in players]
     xdao.update_many(TEST_TABLE_NAME, update_age, indexes)
     aged_players = xdao.search_table(TEST_TABLE_NAME, {})
+
+def test_backfill_update(xdao):
+    update = {"position": "PLAYER"}
+    xdao.update_rows(TEST_TABLE_NAME, update, {})
+    players = xdao.search_table(TEST_TABLE_NAME, {})
+    assert all(e["position"] == "PLAYER" for e in players)
 
 def test_delete_rows(xdao):
     xdao.delete_rows(TEST_TABLE_NAME, {"name": "Michael Jordan"})

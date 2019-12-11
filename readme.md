@@ -2,21 +2,51 @@
 
 A simplified DAO for SQL abstraction for personal projects. All in one file.
 
-Opinionated: 
+    pip install sqlitedao
 
-1. No one should be writing more SQL, abstracting them away is conforming to unix philosophy.
+### Examples
 
-2. Table name or column names should not have spaces (or other weird characters) in them.
+Create Table easily:
 
-3. Single connection to a single sqlite db.
+    dao = SqliteDao.get_instance(DB_PATH)
 
-Functionalities:
+    create_table_columns = {
+        "name": "text",
+        "position": "text",
+        "age": "integer",
+        "height": "text"
+    }
+    dao.create_table(TEST_TABLE_NAME, create_table_columns)
 
-1. Create tables, list tables etc with python dicts.
+Or with a bit more control:
 
-2. CRUD operations by dictionary inputs or items.
+    columns = ColumnDict()
+    columns\
+        .add_column("name", "text", "PRIMARY KEY")\
+        .add_column("position", "text")\
+        .add_column("age", "integer")\
+        .add_column("height", "text")
+    create_table_indexes = {
+        "name_index": ["name"]
+    }
+    dao.create_table(TEST_TABLE_NAME, columns, create_table_indexes)
 
-3. DAO abstraction base item.
+Insert records easily:
+
+    lebron = {"name": "LeBron James", "position": "SF", "age": 35, "height": "6-8.5"}
+    kobe = {"name": "Kobe Bryant", "position":  "SG", "age": 41, "height": "6-6"}
+    jordan = {"name": "Michael Jordan", "position": "SG", "age": 56, "height": "6-6"}
+    dao.insert_rows(TEST_TABLE_NAME, [lebron, kobe, jordan])
+    
+Query easily:
+
+    result = dao.search_table(TEST_TABLE_NAME, {"position": "SG"})
+    [{'name': 'Kobe Bryant', 'position': 'SG', 'age': 41, 'height': '6-6'},
+     {'name': 'Michael Jordan', 'position': 'SG', 'age': 56, 'height': '6-6'}]
+
+etc.
+
+The purpose of this package is to abstract away SQL commands for better control.
 
 ## Helpers
 
@@ -27,3 +57,9 @@ Functionalities:
 * 1, 2 not needed for full functions
 
 3. TableItem: baseclass for python items <-> db row connection.
+
+## TODO
+
+Add support for pagination (offsets)
+
+Create tests for TableItem.
