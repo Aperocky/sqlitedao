@@ -37,16 +37,22 @@ Insert records easily:
     kobe = {"name": "Kobe Bryant", "position":  "SG", "age": 41, "height": "6-6"}
     jordan = {"name": "Michael Jordan", "position": "SG", "age": 56, "height": "6-6"}
     dao.insert_rows(TEST_TABLE_NAME, [lebron, kobe, jordan])
-    
+
 Query easily:
 
     result = dao.search_table(TEST_TABLE_NAME, {"position": "SG"})
     [{'name': 'Kobe Bryant', 'position': 'SG', 'age': 41, 'height': '6-6'},
      {'name': 'Michael Jordan', 'position': 'SG', 'age': 56, 'height': '6-6'}]
 
-etc.
+Or with more operators:
 
-The purpose of this package is to abstract away SQL commands for better control.
+    result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_filter("age", 40, operator="<"))
+
+Create objects off `TableItem` easily and deal with even less code,
+
+    dao.insert_item(my_item)
+
+see `test/item_test.py` for example.
 
 ## Helpers
 
@@ -61,5 +67,3 @@ The purpose of this package is to abstract away SQL commands for better control.
 ## TODO
 
 Add support for pagination (offsets)
-
-Create tests for TableItem.

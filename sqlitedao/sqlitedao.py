@@ -215,10 +215,11 @@ class SqliteDao:
             query += " WHERE "
             for k, v in search_dict.items():
                 if extended_feature:
-                    key_strings.append("{} {} ?".format(v["value"], v["operator"]))
+                    key_strings.append("{} {} ?".format(k, v["operator"]))
+                    value_strings.append(v["value"])
                 else:
                     key_strings.append("{} = ?".format(k))
-                value_strings.append(v)
+                    value_strings.append(v)
             query += " AND ".join(key_strings)
         print("Running DELETE query: {}".format(query))
         cursor.execute(query, value_strings)
@@ -231,7 +232,7 @@ class SqliteDao:
         self.insert_row(table_item.get_table(), table_item.get_row_tuple())
 
     def insert_items(self, table_items):
-        self.insert_rows(table_item.get_table(), [item.get_row_tuple() for item in table_items])
+        self.insert_rows(table_items[0].get_table(), [item.get_row_tuple() for item in table_items])
 
     # Find item based on a index only table_item, returns the full item if found
     def find_item(self, table_item):
@@ -241,13 +242,13 @@ class SqliteDao:
         return None
 
     def delete_item(self, table_item):
-        self.delete_rows(table_item.get_table(), table_item.get_index_dict(), 1)
+        self.delete_rows(table_item.get_table(), table_item.get_index_dict())
 
     def update_item(self, table_item):
         self.update_row(table_item.get_table(), table_item.get_row_tuple(), table_item.get_index_dict())
 
     def update_items(self, table_items):
-        self.update_row(table_items[0].get_table(), [item.get_row_tuple() for item in table_items],
+        self.update_many(table_items[0].get_table(), [item.get_row_tuple() for item in table_items],
             [item.get_index_dict() for item in table_items])
 
 
@@ -284,6 +285,9 @@ class TableItem:
     @classmethod
     def get_table(cls):
         return cls.TABLE_NAME
+
+    def __eq__(self, other):
+        return self.get_row_tuple() == other.get_row_tuple()
 
     def get_row_tuple(self):
         return self.row_tuple

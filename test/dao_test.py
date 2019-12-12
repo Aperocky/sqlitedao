@@ -173,3 +173,8 @@ def test_delete_rows(xdao):
     xdao.delete_rows(TEST_TABLE_NAME, {})
     assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 0
 
+def test_delete_rows_by_extended_search(xdao):
+    xdao.delete_rows(TEST_TABLE_NAME, SearchDict().add_filter("age", 40, ">"))
+    assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 1
+    assert xdao.search_table(TEST_TABLE_NAME, {})[0] == lebron
+
