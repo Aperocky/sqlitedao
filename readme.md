@@ -31,14 +31,14 @@ Or with a bit more control:
     }
     dao.create_table(TEST_TABLE_NAME, columns, create_table_indexes)
 
-Insert records easily:
+INSERT:
 
     lebron = {"name": "LeBron James", "position": "SF", "age": 35, "height": "6-8.5"}
     kobe = {"name": "Kobe Bryant", "position":  "SG", "age": 41, "height": "6-6"}
     jordan = {"name": "Michael Jordan", "position": "SG", "age": 56, "height": "6-6"}
     dao.insert_rows(TEST_TABLE_NAME, [lebron, kobe, jordan])
 
-Query easily:
+READ:
 
     result = dao.search_table(TEST_TABLE_NAME, {"position": "SG"})
     [{'name': 'Kobe Bryant', 'position': 'SG', 'age': 41, 'height': '6-6'},
@@ -48,9 +48,26 @@ Or with more operators:
 
     result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_filter("age", 40, operator="<"))
 
-Create objects off `TableItem` easily and deal with even less code,
+UPDATE:
 
-    dao.insert_item(my_item)
+    dao.update_many(TEST_TABLE_NAME, [{"age": 30}, {"age": 40}], [{"name": "A"}, {"name": "B"}])
+
+`update_row`, `update_rows` is also available with slightly different functionality.
+
+DELETE:
+
+    dao.delete_rows(TEST_TABLE_NAME, {"position": "SG"})
+
+Same for update and deletion.
+
+Create classes inheriting `TableItem` easily and deal with even less code,
+
+    dao.insert_item(item)
+    dao.insert_items(items)
+    dao.update_item(changed_item)
+    dao.update_items(changed_items)
+    dao.find_item(item_with_only_index_populated)
+    ...
 
 see `test/item_test.py` for example.
 
