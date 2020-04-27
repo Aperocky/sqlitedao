@@ -1,6 +1,8 @@
 from sqlitedao import SqliteDao, TableItem, SearchDict
 from .dao_test import prepopulated_dao, dao
 from .dao_test import TEST_TABLE_NAME
+from sqlite3 import IntegrityError
+import pytest
 
 class Player(TableItem):
 
@@ -49,6 +51,21 @@ def test_insert_items(xdao):
     xdao.insert_items([zion, harden])
     assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 5
 
+def test_insert_duplicate(xdao):
+    with pytest.raises(IntegrityError):
+        xdao.insert_items([zion, harden])
+        xdao.insert_items([zion])
+    with pytest.raises(IntegrityError):
+        xdao.insert_items([zion, harden])
+        xdao.insert_item(zion)
+
+def test_insert_or_update(xdao):
+    lebron = xdao.find_item(Player(name="LeBron James"))
+    lebron.grow()
+    xdao.insert_item(lebron, True)
+    lebron_now = xdao.find_item(Player(name="LeBron James"))
+    assert lebron_now.age == 36
+
 def test_update_items(xdao):
     xdao.insert_items([zion, harden])
     search = SearchDict().add_filter("age", 40, "<")
@@ -62,6 +79,13 @@ def test_update_items(xdao):
 def test_delete_item(xdao):
     xdao.delete_item(Player(name="Michael Jordan"))
     assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 2
+
+def test_get_items(xdao):
+    xdao.insert_items([zion, harden])
+    search = SearchDict().add_filter("age", 40, "<")
+    youth = xdao.get_items(Player, search)
+    assert zion in youth
+    assert len(youth) == 3
 
 def test_find_item(xdao):
     lebron = xdao.find_item(Player(name="LeBron James"))

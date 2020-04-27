@@ -82,6 +82,21 @@ def test_basic_index_creation(dao):
     dao.drop_table(TEST_TABLE_NAME)
     assert len(dao.get_schema()) == 0
 
+def test_multiple_index_creation(dao):
+    create_table_columns = {
+        "name": "text",
+        "position": "text",
+        "age": "integer",
+        "height": "text"
+    }
+    create_table_indexes = {
+        "name_index": ["name"],
+        "age_and_height_index": ["age", "height"]
+    }
+    dao.create_table(TEST_TABLE_NAME, create_table_columns, create_table_indexes)
+    indexes = dao.get_schema(info="*", type="index")
+    assert len(indexes) == 2
+
 def test_extended_column_creation(dao):
     columns = ColumnDict()
     columns\

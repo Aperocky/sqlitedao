@@ -98,7 +98,6 @@ class SqliteDao:
         query += " AND ".join(key_strings)
         if limit is not None:
             query += " LIMIT {}".format(limit)
-        print("Running READ query: {}".format(query))
         cursor.execute(query, value_strings)
         result = [dict(row) for row in cursor.fetchall()]
         cursor.close()
@@ -153,7 +152,6 @@ class SqliteDao:
             value_strings.append(v)
         query += ", ".join(set_strings) + " WHERE "
         query += " AND ".join(search_strings)
-        print("Running UPDATE query: {}".format(query))
         cursor = self.conn.cursor()
         cursor.execute(query, value_strings)
         self.conn.commit()
@@ -199,7 +197,6 @@ class SqliteDao:
         if search_strings:
             query += " WHERE "
             query += " AND ".join(search_strings)
-        print("Running UPDATE query: {}".format(query))
         cursor = self.conn.cursor()
         cursor.execute(query, value_strings)
         self.conn.commit()
@@ -221,15 +218,20 @@ class SqliteDao:
                     key_strings.append("{} = ?".format(k))
                     value_strings.append(v)
             query += " AND ".join(key_strings)
-        print("Running DELETE query: {}".format(query))
         cursor.execute(query, value_strings)
 
     # ======================================== #
     # ACCOMODATE TABLE ITEMS                   #
     # ======================================== #
 
-    def insert_item(self, table_item):
-        self.insert_row(table_item.get_table(), table_item.get_row_tuple())
+    def insert_item(self, table_item, update_if_duplicate=False):
+        try:
+            self.insert_row(table_item.get_table(), table_item.get_row_tuple())
+        except sqlite3.IntegrityError:
+            if update_if_duplicate:
+                self.update_item(table_item)
+            else:
+                raise
 
     def insert_items(self, table_items):
         self.insert_rows(table_items[0].get_table(), [item.get_row_tuple() for item in table_items])
@@ -241,6 +243,10 @@ class SqliteDao:
             return type(table_item)(result[0])
         return None
 
+    def get_items(self, class_type, search_dict):
+        rows = self.search_table(class_type.TABLE_NAME, search_dict)
+        return [class_type(row) for row in rows]
+
     def delete_item(self, table_item):
         self.delete_rows(table_item.get_table(), table_item.get_index_dict())
 
@@ -248,8 +254,7 @@ class SqliteDao:
         self.update_row(table_item.get_table(), table_item.get_row_tuple(), table_item.get_index_dict())
 
     def update_items(self, table_items):
-        self.update_many(table_items[0].get_table(), [item.get_row_tuple() for item in table_items],
-            [item.get_index_dict() for item in table_items])
+        self.update_many(table_items[0].get_table(), [item.get_row_tuple() for item in table_items], [item.get_index_dict() for item in table_items])
 
 
 class SearchDict(dict):
