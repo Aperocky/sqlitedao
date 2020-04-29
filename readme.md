@@ -1,5 +1,7 @@
 ## SqliteDao
 
+![PyPI version](http://img.shields.io/pypi/v/sqlitedao.svg) &nbsp; ![Python 3.x](http://img.shields.io/badge/Python-3.x-green.svg) &nbsp; ![PyPI license](https://img.shields.io/github/license/mashape/apistatus.svg) &nbsp; [![Downloads](https://pepy.tech/badge/sqlitedao)](https://pepy.tech/project/sqlitedao)
+
 A simplified DAO for SQL abstraction for personal projects. All in one file.
 
     pip install sqlitedao
@@ -44,9 +46,11 @@ READ:
     [{'name': 'Kobe Bryant', 'position': 'SG', 'age': 41, 'height': '6-6'},
      {'name': 'Michael Jordan', 'position': 'SG', 'age': 56, 'height': '6-6'}]
 
-Or with more operators:
+Or with more search operations:
 
     result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_filter("age", 40, operator="<"))
+    result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_filter("age", 40, operator="<"), group_by=["positions"])
+    result = dao.search_table(TEST_TABLE_NAME, {}, order_by=["age"])
 
 UPDATE:
 
@@ -81,6 +85,3 @@ see `test/item_test.py` for example.
 
 3. TableItem: baseclass for python items <-> db row connection.
 
-## TODO
-
-Add support for pagination (offsets)

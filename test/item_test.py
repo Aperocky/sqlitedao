@@ -87,6 +87,26 @@ def test_get_items(xdao):
     assert zion in youth
     assert len(youth) == 3
 
+def test_get_items_orderby(xdao):
+    xdao.insert_items([zion, harden])
+    search = SearchDict().add_filter("age", 40, "<")
+    youth = xdao.get_items(Player, search, order_by=["age"])
+    assert youth[2] == zion
+
+def test_get_items_orderby(xdao):
+    xdao.insert_items([zion, harden])
+    search = SearchDict().add_filter("age", 40, "<")
+    youth = xdao.get_items(Player, search, order_by=["age"])
+    assert youth[2] == zion
+
+def test_get_items_offset(xdao):
+    xdao.insert_items([zion, harden])
+    players = xdao.get_items(Player, {}, order_by=["age"], desc=False, limit=2, offset=2)
+    kobe = xdao.find_item(Player(name="Kobe Bryant"))
+    lebron = xdao.find_item(Player(name="LeBron James"))
+    assert kobe in players
+    assert lebron in players
+
 def test_find_item(xdao):
     lebron = xdao.find_item(Player(name="LeBron James"))
     assert lebron.height == "6-8.5"

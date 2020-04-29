@@ -31,6 +31,13 @@ class SqliteDao:
         cursor.close()
         return not (table == None)
 
+    def get_row_count(self, table_name):
+        query = "SELECT count(*) from {}".format(table_name)
+        cursor = self.conn.execute(query)
+        num_count = cursor.fetchone()[0]
+        cursor.close()
+        return num_count
+
     def get_schema(self, info="name", type="table"):
         query = "SELECT {} from sqlite_master WHERE type='{}'".format(info, type)
         cursor = self.conn.execute(query)
@@ -76,15 +83,33 @@ class SqliteDao:
         cursor.close()
 
     # fetch rows where search_dict is satisfied
-    def search_table(self, table_name, search_dict, limit=None):
-        extended_feature = isinstance(search_dict, SearchDict)
+    def search_table(self, table_name, search_dict, order_by=None, group_by=None, limit=None, offset=None, desc=True):
+        def group_by_ops():
+            select_clause = query.split("from")[0]
+            substitute_select_clause = "SELECT count(*) AS count,{} ".format(",".join(group_by))
+            groupby_query = query.replace(select_clause, substitute_select_clause)
+            groupby_query += " GROUP BY {}".format(",".join(group_by)) + " ORDER BY count DESC"
+            return groupby_query
+
         cursor = self.conn.cursor()
         query = "SELECT * from {}".format(table_name)
         if not search_dict:
+            if group_by is not None:
+                query = group_by_ops()
+            elif order_by is not None:
+                direction = "DESC" if desc else "ASC"
+                query += " ORDER BY {} {}".format(",".join(order_by), direction)
+            if limit is not None:
+                query += " LIMIT {}".format(limit)
+                if offset is not None:
+                    query += " OFFSET {}".format(offset)
             cursor.execute(query)
             result = [dict(row) for row in cursor.fetchall()]
             cursor.close()
             return result
+
+        # Query that contains where clause
+        extended_feature = isinstance(search_dict, SearchDict)
         query += " WHERE "
         key_strings = []
         value_strings = []
@@ -96,8 +121,15 @@ class SqliteDao:
                 key_strings.append("{} = ?".format(k))
                 value_strings.append(v)
         query += " AND ".join(key_strings)
+        if group_by is not None:
+            query = group_by_ops()
+        elif order_by is not None:
+            direction = "DESC" if desc else "ASC"
+            query += " ORDER BY {} {}".format(",".join(order_by), direction)
         if limit is not None:
             query += " LIMIT {}".format(limit)
+            if offset is not None:
+                query += " OFFSET {}".format(offset)
         cursor.execute(query, value_strings)
         result = [dict(row) for row in cursor.fetchall()]
         cursor.close()
@@ -243,8 +275,8 @@ class SqliteDao:
             return type(table_item)(result[0])
         return None
 
-    def get_items(self, class_type, search_dict):
-        rows = self.search_table(class_type.TABLE_NAME, search_dict)
+    def get_items(self, class_type, search_dict, order_by=None, limit=None, offset=None, desc=True):
+        rows = self.search_table(class_type.TABLE_NAME, search_dict, order_by=order_by, limit=limit, offset=offset, desc=desc)
         return [class_type(row) for row in rows]
 
     def delete_item(self, table_item):

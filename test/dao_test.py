@@ -193,3 +193,51 @@ def test_delete_rows_by_extended_search(xdao):
     assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 1
     assert xdao.search_table(TEST_TABLE_NAME, {})[0] == lebron
 
+def test_get_rowcount(xdao):
+    row_count = xdao.get_row_count(TEST_TABLE_NAME)
+    assert row_count == 3
+
+def test_groupby(xdao):
+    groupby_positions = xdao.search_table(TEST_TABLE_NAME, {}, group_by=["position"])
+    assert groupby_positions[0]["position"] == "SG"
+    assert groupby_positions[1]["count"] == 1
+
+def test_groupby_with_search(xdao):
+    search = SearchDict().add_filter("age", 40, operator=">")
+    groupby_positions = xdao.search_table(TEST_TABLE_NAME, search, group_by=["position"])
+    assert len(groupby_positions) == 1
+    assert groupby_positions[0]["count"] == 2
+
+def test_groupby_with_limit(xdao):
+    search = SearchDict().add_filter("age", 20, operator=">")
+    groupby_positions = xdao.search_table(TEST_TABLE_NAME, search, group_by=["position"], limit=1)
+    assert len(groupby_positions) == 1
+    assert groupby_positions[0]["position"] == "SG"
+
+def test_orderby(xdao):
+    rows = xdao.search_table(TEST_TABLE_NAME, {}, order_by=["age"])
+    assert rows[0]["name"] == "Michael Jordan"
+    assert rows[1]["name"] == "Kobe Bryant"
+
+def test_orderby_with_limit(xdao):
+    rows = xdao.search_table(TEST_TABLE_NAME, {}, order_by=["age"], limit=2)
+    assert len(rows) == 2
+    assert rows[1]["name"] == "Kobe Bryant"
+
+def test_orderby_groupby_conflict(xdao):
+    groupby_positions = xdao.search_table(TEST_TABLE_NAME, {}, group_by=["position"], order_by=["age"])
+    assert groupby_positions[0]["position"] == "SG"
+    assert groupby_positions[1]["count"] == 1
+
+def test_orderby_with_search(xdao):
+    search = SearchDict().add_filter("age", 45, operator="<")
+    rows = xdao.search_table(TEST_TABLE_NAME, search, order_by=["age"])
+    assert len(rows) == 2
+    assert rows[0]["name"] == "Kobe Bryant"
+    rows = xdao.search_table(TEST_TABLE_NAME, search, order_by=["age"], desc=False)
+    assert rows[0]["name"] == "LeBron James"
+
+def test_offset(xdao):
+    rows = xdao.search_table(TEST_TABLE_NAME, {}, order_by=["age"], limit=2, offset=2)
+    assert len(rows) == 1
+    assert rows[0]["name"] == "LeBron James"
