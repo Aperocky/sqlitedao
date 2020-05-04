@@ -4,3 +4,4 @@ dist/
 sqlitedao.egg-info/
 **/*.swp
 test.db
+.coverage

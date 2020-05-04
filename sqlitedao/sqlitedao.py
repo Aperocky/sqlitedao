@@ -43,14 +43,6 @@ class SqliteDao:
         cursor = self.conn.execute(query)
         return [dict(t) for t in cursor.fetchall()]
 
-    # Print all tables in the database, name only
-    def print_tables(self, info="name"):
-        query = "SELECT {} from sqlite_master WHERE type='table'".format(info)
-        cursor = self.conn.execute(query)
-        print("FOUND FOLLOWING TABLES: ")
-        print("\n".join([str(dict(t)) for t in cursor.fetchall()]))
-        cursor.close()
-
     def drop_table(self, table_name):
         query = "DROP TABLE {}".format(table_name)
         self.conn.execute(query)
@@ -146,8 +138,11 @@ class SqliteDao:
         query += " VALUES "
         query += "(" + ",".join(["?"] * len(row_tuple)) + ")"
         cursor = self.conn.cursor()
-        cursor.execute(query, values)
-        self.conn.commit()
+        try:
+            cursor.execute(query, values)
+            self.conn.commit()
+        except sqlite3.IntegrityError as e:
+            raise DuplicateError("Insertion violates uniqueness constraint: {}".format(e))
         cursor.close()
 
     def insert_rows(self, table_name, row_tuples):
@@ -158,7 +153,7 @@ class SqliteDao:
             if row_tuple.keys() != keys:
                 raise ValueError("batch should have same keys")
             multiple_values.append(list(row_tuple.values()))
-        query = "INSERT INTO {} ".format(table_name)
+        query = "INSERT OR IGNORE INTO {} ".format(table_name)
         query += "(" + ",".join(keys) + ")"
         query += " VALUES "
         query += "(" + ",".join(["?"] * len(keys)) + ")"
@@ -220,10 +215,10 @@ class SqliteDao:
             value_strings.append(v)
         for k, v in search_dict.items():
             if extended_feature:
-                key_strings.append("{} {} ?".format(k, v["operator"]))
+                search_strings.append("{} {} ?".format(k, v["operator"]))
                 value_strings.append(v["value"])
             else:
-                key_strings.append("{} = ?".format(k))
+                search_strings.append("{} = ?".format(k))
                 value_strings.append(v)
         query += ", ".join(set_strings)
         if search_strings:
@@ -259,7 +254,7 @@ class SqliteDao:
     def insert_item(self, table_item, update_if_duplicate=False):
         try:
             self.insert_row(table_item.get_table(), table_item.get_row_tuple())
-        except sqlite3.IntegrityError:
+        except DuplicateError:
             if update_if_duplicate:
                 self.update_item(table_item)
             else:
@@ -335,3 +330,6 @@ class TableItem:
         except KeyError as e:
             print("Row tuple does not contain index: {}".format(e))
 
+
+class DuplicateError(Exception):
+    pass

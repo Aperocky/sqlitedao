@@ -181,6 +181,20 @@ def test_backfill_update(xdao):
     players = xdao.search_table(TEST_TABLE_NAME, {})
     assert all(e["position"] == "PLAYER" for e in players)
 
+def test_backfill_update_with_search_dict(xdao):
+    update = {"position": "PLAYER"}
+    search = SearchDict().add_filter("age", 40, operator="<")
+    xdao.update_rows(TEST_TABLE_NAME, update, search)
+    players = xdao.search_table(TEST_TABLE_NAME, {})
+    assert not all(e["position"] == "PLAYER" for e in players)
+    assert sum(e["position"] == "PLAYER" for e in players) == 1
+
+def test_backfill_update_with_search(xdao):
+    update = {"position": "PLAYER"}
+    xdao.update_rows(TEST_TABLE_NAME, update, {"position": "SG"})
+    players = xdao.search_table(TEST_TABLE_NAME, {"position": "PLAYER"})
+    assert len(players) == 2
+
 def test_delete_rows(xdao):
     xdao.delete_rows(TEST_TABLE_NAME, {"name": "Michael Jordan"})
     assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 2

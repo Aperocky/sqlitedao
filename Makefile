@@ -2,7 +2,8 @@ build:
 	@python3 -m pip install .
 
 test:
-	@pytest
+	@coverage run -m pytest
+	@coverage report --omit=/usr/*,test* -m
 
 dist:
 	@python3 setup.py sdist bdist_wheel
