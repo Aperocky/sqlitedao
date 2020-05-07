@@ -5,6 +5,8 @@
 A simplified DAO for SQL abstraction for personal projects. All in one file.
 
     pip install sqlitedao
+    
+Pet project: [crawfish](https://github.com/Aperocky/crawfish)
 
 ### Examples
 
