@@ -6,9 +6,9 @@ class SqliteDao:
     INSTANCE_MAP = {}
 
     @staticmethod
-    def get_instance(db_path):
+    def get_instance(db_path, single_threaded=False):
         if db_path not in SqliteDao.INSTANCE_MAP:
-            SqliteDao.INSTANCE_MAP[db_path] = SqliteDao(db_path)
+            SqliteDao.INSTANCE_MAP[db_path] = SqliteDao(db_path, single_threaded)
         return SqliteDao.INSTANCE_MAP[db_path]
 
     @staticmethod
@@ -17,8 +17,8 @@ class SqliteDao:
             SqliteDao.INSTANCE_MAP[db_path].close()
             SqliteDao.INSTANCE_MAP.pop(db_path)
 
-    def __init__(self, db_path):
-        self.conn = sqlite3.connect(db_path)
+    def __init__(self, db_path, single_threaded=False):
+        self.conn = sqlite3.connect(db_path, check_same_thread=single_threaded)
         self.conn.row_factory = sqlite3.Row
 
     def close(self):
@@ -75,7 +75,7 @@ class SqliteDao:
         cursor.close()
 
     # fetch rows where search_dict is satisfied
-    def search_table(self, table_name, search_dict, order_by=None, group_by=None, limit=None, offset=None, desc=True):
+    def search_table(self, table_name, search_dict, order_by=None, group_by=None, limit=None, offset=None, desc=True, debug=False):
         def group_by_ops():
             select_clause = query.split("from")[0]
             substitute_select_clause = "SELECT count(*) AS count,{} ".format(",".join(group_by))
@@ -106,12 +106,7 @@ class SqliteDao:
         key_strings = []
         value_strings = []
         for k, v in search_dict.items():
-            if extended_feature:
-                key_strings.append("{} {} ?".format(k, v["operator"]))
-                value_strings.append(v["value"])
-            else:
-                key_strings.append("{} = ?".format(k))
-                value_strings.append(v)
+            self.populate_search_dict(key_strings, value_strings, k, v, extended_feature)
         query += " AND ".join(key_strings)
         if group_by is not None:
             query = group_by_ops()
@@ -122,6 +117,8 @@ class SqliteDao:
             query += " LIMIT {}".format(limit)
             if offset is not None:
                 query += " OFFSET {}".format(offset)
+        if debug:
+            print(query)
         cursor.execute(query, value_strings)
         result = [dict(row) for row in cursor.fetchall()]
         cursor.close()
@@ -214,12 +211,7 @@ class SqliteDao:
             set_strings.append("{}=?".format(k))
             value_strings.append(v)
         for k, v in search_dict.items():
-            if extended_feature:
-                search_strings.append("{} {} ?".format(k, v["operator"]))
-                value_strings.append(v["value"])
-            else:
-                search_strings.append("{} = ?".format(k))
-                value_strings.append(v)
+            self.populate_search_dict(search_strings, value_strings, k, v, extended_feature)
         query += ", ".join(set_strings)
         if search_strings:
             query += " WHERE "
@@ -238,14 +230,21 @@ class SqliteDao:
         if len(search_dict) > 0:
             query += " WHERE "
             for k, v in search_dict.items():
-                if extended_feature:
-                    key_strings.append("{} {} ?".format(k, v["operator"]))
-                    value_strings.append(v["value"])
-                else:
-                    key_strings.append("{} = ?".format(k))
-                    value_strings.append(v)
+                self.populate_search_dict(key_strings, value_strings, k, v, extended_feature)
             query += " AND ".join(key_strings)
         cursor.execute(query, value_strings)
+
+    def populate_search_dict(self, key_strings, value_strings, k, v, extended_feature):
+        if extended_feature:
+            if SearchDict.is_comp(v):
+                key_strings.append("{} {} ?".format(k, v["operator"]))
+                value_strings.append(v["value"])
+            else:
+                key_strings.append("{} BETWEEN ? AND ?".format(k))
+                value_strings.extend([v["value_low"], v["value_high"]])
+        else:
+            key_strings.append("{} = ?".format(k))
+            value_strings.append(v)
 
     # ======================================== #
     # ACCOMODATE TABLE ITEMS                   #
@@ -287,8 +286,23 @@ class SqliteDao:
 class SearchDict(dict):
 
     def add_filter(self, column_name, value, operator="="):
-        self[column_name] = {"value": value, "operator": operator}
+        self[column_name] = {
+            "statement_type": "comparison",
+            "value": value,
+            "operator": operator
+        }
         return self
+
+    def add_between(self, column_name, value_low, value_high):
+        self[column_name] = {
+            "statement_type": "between",
+            "value_low": value_low,
+            "value_high": value_high
+        }
+
+    @staticmethod
+    def is_comp(val):
+        return val["statement_type"] == "comparison"
 
 
 class ColumnDict(dict):

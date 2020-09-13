@@ -51,6 +51,7 @@ READ:
 Or with more search operations:
 
     result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_filter("age", 40, operator="<"))
+    result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_between("age", 37, 40))
     result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_filter("age", 40, operator="<"), group_by=["positions"])
     result = dao.search_table(TEST_TABLE_NAME, {}, order_by=["age"])
 

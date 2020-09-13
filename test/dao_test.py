@@ -255,3 +255,34 @@ def test_offset(xdao):
     rows = xdao.search_table(TEST_TABLE_NAME, {}, order_by=["age"], limit=2, offset=2)
     assert len(rows) == 1
     assert rows[0]["name"] == "LeBron James"
+
+def test_between_with_search(xdao):
+    search = SearchDict()
+    search.add_between("age", 35, 50)
+    rows = xdao.search_table(TEST_TABLE_NAME, search)
+    assert len(rows) == 2
+    search.clear()
+    search.add_between("age", 38, 50)
+    rows = xdao.search_table(TEST_TABLE_NAME, search)
+    assert len(rows) == 1
+    assert rows[0]["name"] == "Kobe Bryant"
+
+def test_between_with_update(xdao):
+    search = SearchDict()
+    search.add_between("age", 37, 50)
+    update = {"age": 60}
+    xdao.update_rows(TEST_TABLE_NAME, update, search)
+    rows = xdao.search_table(TEST_TABLE_NAME, {}, order_by=["age"])
+    assert rows[0]["name"] == "Kobe Bryant"
+    assert rows[0]["age"] == 60
+
+def test_between_with_delete(xdao):
+    search = SearchDict()
+    search.add_between("age", 37, 50)
+    xdao.delete_rows(TEST_TABLE_NAME, search)
+    rows = xdao.search_table(TEST_TABLE_NAME, {})
+    assert len(rows) == 2
+    # RIP kobe
+    assert not any([e["name"] == "Kobe Bryant" for e in rows])
+    # Go lakers
+    assert any([e["name"] == "LeBron James" for e in rows])
