@@ -1,5 +1,5 @@
 from sqlitedao import SqliteDao, TableItem, SearchDict, DuplicateError
-from .dao_test import prepopulated_dao, dao
+from .dao_test import prepopulated_dao
 from .dao_test import TEST_TABLE_NAME
 import pytest
 

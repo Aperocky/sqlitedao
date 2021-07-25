@@ -46,6 +46,8 @@ def prepopulated_dao():
     yield dao
     # Deconstruct
     SqliteDao.terminate_instance(TEST_DB_NAME)
+    if os.path.exists(TEST_DB_NAME):
+        os.remove(TEST_DB_NAME)
 
 def test_basic_table_creation(dao):
     tables = dao.get_schema() # Should be empty
