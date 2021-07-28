@@ -11,21 +11,55 @@ class Player(TableItem):
     def __init__(self, row_tuple=None, name=None, position=None, age=None, height=None):
         if row_tuple is not None:
             self.row_tuple = row_tuple
-            self.name = row_tuple["name"]
-            self.position = row_tuple["position"]
-            self.age = row_tuple["age"]
-            self.height = row_tuple["height"]
+            self.load_tuple()
         else:
             self.name = name
             self.position = position
             self.age = age
             self.height = height
-            self.row_tuple = {"name": name, "position": position, "age": age, "height": height}
+            self.sync_tuple()
 
     def sync_tuple(self):
         self.row_tuple = {"name": self.name, "position": self.position, "age": self.age, "height": self.height}
 
+    def load_tuple(self):
+        self.name = self.row_tuple["name"]
+        self.position = self.row_tuple["position"]
+        self.age = self.row_tuple["age"]
+        self.height = self.row_tuple["height"]
+
     def grow(self):
+        self.age += 1
+        self.sync_tuple()
+
+
+# Test new init changes while maintaining compatibility
+class PlayerX(TableItem):
+
+    TABLE_NAME = TEST_TABLE_NAME
+    INDEX_KEYS = ["name"]
+    ALL_COLUMNS = {
+        "name": str,
+        "position": str,
+        "age": int,
+        "height": str
+    }
+
+    def __init__(self, row_tuple=None, **kwargs):
+        super().__init__(row_tuple, **kwargs)
+        self.load_tuple()
+
+    def sync_tuple(self):
+        self.row_tuple = {"name": self.name, "position": self.position, "age": self.age, "height": self.height}
+
+    def load_tuple(self):
+        self.name = self.row_tuple["name"]
+        self.position = self.row_tuple["position"]
+        self.age = self.row_tuple["age"]
+        self.height = self.row_tuple["height"]
+
+    def grow(self):
+        self.load_tuple()
         self.age += 1
         self.sync_tuple()
 
@@ -33,15 +67,32 @@ class Player(TableItem):
 zion = Player(name="Zion Williamson", position="PF", age=20, height="6-6")
 harden = Player(name="James Harden", position="SG", age=30, height="6-5")
 
+zionx = PlayerX(name="Zion Williamson", position="PF", age=20, height="6-6")
+
 def test_insert_item(xdao):
     xdao.insert_item(zion)
     assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 4
     zion_from_duke = Player(xdao.search_table(TEST_TABLE_NAME, {"name": "Zion Williamson"})[0])
     assert zion == zion_from_duke
 
+def test_insert_item_x(xdao):
+    xdao.insert_item(zionx)
+    assert len(xdao.search_table(TEST_TABLE_NAME, {})) == 4
+    zion_from_duke = PlayerX(xdao.search_table(TEST_TABLE_NAME, {"name": "Zion Williamson"})[0])
+    assert zion == zion_from_duke
+    zion_from_duke = xdao.find_item(PlayerX(name="Zion Williamson"))
+    assert zion == zion_from_duke
+
 def test_update_item(xdao):
     xdao.insert_item(zion)
     middle_zion = Player(xdao.search_table(TEST_TABLE_NAME, {"name": "Zion Williamson"})[0])
+    middle_zion.grow()
+    xdao.update_item(middle_zion)
+    assert xdao.search_table(TEST_TABLE_NAME, {"name": "Zion Williamson"})[0]["age"] == 21
+
+def test_update_item_x(xdao):
+    xdao.insert_item(zionx)
+    middle_zion = PlayerX(xdao.search_table(TEST_TABLE_NAME, {"name": "Zion Williamson"})[0])
     middle_zion.grow()
     xdao.update_item(middle_zion)
     assert xdao.search_table(TEST_TABLE_NAME, {"name": "Zion Williamson"})[0]["age"] == 21
@@ -86,16 +137,23 @@ def test_get_items(xdao):
     assert zion in youth
     assert len(youth) == 3
 
+def test_get_items_x(xdao):
+    xdao.insert_items([zion, harden])
+    search = SearchDict().add_filter("age", 40, "<")
+    youth = xdao.get_items(PlayerX, search)
+    assert zion in youth
+    assert len(youth) == 3
+
 def test_get_items_orderby(xdao):
     xdao.insert_items([zion, harden])
     search = SearchDict().add_filter("age", 40, "<")
     youth = xdao.get_items(Player, search, order_by=["age"])
     assert youth[2] == zion
 
-def test_get_items_orderby(xdao):
+def test_get_items_orderby_x(xdao):
     xdao.insert_items([zion, harden])
     search = SearchDict().add_filter("age", 40, "<")
-    youth = xdao.get_items(Player, search, order_by=["age"])
+    youth = xdao.get_items(PlayerX, search, order_by=["age"])
     assert youth[2] == zion
 
 def test_get_items_offset(xdao):

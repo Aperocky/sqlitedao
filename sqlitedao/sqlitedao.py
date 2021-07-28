@@ -17,6 +17,10 @@ class SqliteDao:
             SqliteDao.INSTANCE_MAP[db_path].close()
             SqliteDao.INSTANCE_MAP.pop(db_path)
 
+    @staticmethod
+    def terminate_all_instances():
+        SqliteDao.INSTANCE_MAP = {}
+
     def __init__(self, db_path, single_threaded=False):
         self.conn = sqlite3.connect(db_path, check_same_thread=single_threaded)
         self.conn.row_factory = sqlite3.Row
@@ -322,11 +326,28 @@ class ColumnDict(dict):
 class TableItem:
 
     TABLE_NAME = "table_this_item_belong_to"
-    INDEX_KEYS = ["dummy_index_1", "dummy_index_2"]
+    INDEX_KEYS = ["dummy_index_1"]
+    ALL_COLUMNS = {} # column name to type map
 
     # Row_tuple builds the correspondence to table
-    def __init__(self, row_tuple):
-        self.row_tuple = row_tuple
+    def __init__(self, row_tuple=None, **kwargs):
+        if row_tuple:
+            self.row_tuple = row_tuple
+        elif len(kwargs) and type(self).ALL_COLUMNS:
+            ALL_COLUMNS = type(self).ALL_COLUMNS
+            row_tuple = {col: None for col in ALL_COLUMNS.keys()}
+            for key, val in kwargs.items():
+                if key in ALL_COLUMNS:
+                    row_tuple[key] = ALL_COLUMNS[key](val)
+            for index in type(self).INDEX_KEYS:
+                if index not in row_tuple:
+                    raise "ALL_COLUMNS must contain index fields"
+                if row_tuple[index] is None:
+                    raise "index field must be populated"
+            self.row_tuple = row_tuple
+        else:
+            raise "Must pass in either a tuple object or field arguments"
+
 
     @classmethod
     def get_table(cls):

@@ -24,6 +24,8 @@ def dao():
     yield SqliteDao.get_instance(TEST_DB_NAME)
     # Deconstruct
     SqliteDao.terminate_instance(TEST_DB_NAME)
+    if os.path.exists(TEST_DB_NAME):
+        os.remove(TEST_DB_NAME)
 
 @pytest.fixture(name="xdao")
 def prepopulated_dao():
@@ -48,6 +50,14 @@ def prepopulated_dao():
     SqliteDao.terminate_instance(TEST_DB_NAME)
     if os.path.exists(TEST_DB_NAME):
         os.remove(TEST_DB_NAME)
+
+def test_singleton_connection():
+    dao_one = SqliteDao.get_instance(TEST_DB_NAME)
+    dao_two = SqliteDao.get_instance(TEST_DB_NAME)
+    assert dao_one == dao_two
+    assert len(SqliteDao.INSTANCE_MAP) == 1
+    SqliteDao.terminate_all_instances()
+    assert len(SqliteDao.INSTANCE_MAP) == 0
 
 def test_basic_table_creation(dao):
     tables = dao.get_schema() # Should be empty
