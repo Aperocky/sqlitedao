@@ -36,7 +36,7 @@ def prepopulated_dao():
     dao = SqliteDao.get_instance(TEST_DB_NAME)
     columns = ColumnDict()
     columns\
-        .add_column("name", "text", "PRIMARY KEY")\
+        .add_column("name", "text", primary_key=True)\
         .add_column("position", "text")\
         .add_column("age", "integer")\
         .add_column("height", "text")

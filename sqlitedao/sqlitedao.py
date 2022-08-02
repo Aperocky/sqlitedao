@@ -59,11 +59,17 @@ class SqliteDao:
         extended_feature = isinstance(column_dict, ColumnDict)
         query = "CREATE TABLE IF NOT EXISTS {} ( ".format(table_name)
         columns = []
+        primary_keys = []
         for k, v in column_dict.items():
             if extended_feature:
                 columns.append(ColumnDict.to_query(k, v))
+                if v["primary_key"]:
+                    primary_keys.append(k)
             else:
                 columns.append("{} {}".format(k, v))
+        if primary_keys:
+            primary_key_str = "PRIMARY KEY({})".format(", ".join(primary_keys))
+            columns.append(primary_key_str)
         query += ", ".join(columns) + " )"
         cursor = self.conn.cursor()
         cursor.execute(query)
@@ -268,6 +274,8 @@ class SqliteDao:
 
     # Find item based on a index only table_item, returns the full item if found
     def find_item(self, table_item):
+        if not table_item.INDEX_KEYS:
+            raise NoIndexError("This table does not have index keys specified, use get_items instead")
         result = self.search_table(table_item.get_table(), table_item.get_index_dict())
         if result:
             return type(table_item)(result[0])
@@ -318,8 +326,12 @@ class ColumnDict(dict):
             query += value["additional_attributes"]
         return query
 
-    def add_column(self, column_name, data_type, additional_attributes=None):
-        self[column_name] = {"type": data_type, "additional_attributes": additional_attributes}
+    def add_column(self, column_name, data_type, additional_attributes=None, primary_key=False):
+        self[column_name] = {
+            "type": data_type,
+            "additional_attributes": additional_attributes,
+            "primary_key": primary_key
+        }
         return self
 
 
@@ -348,7 +360,6 @@ class TableItem:
         else:
             raise "Must pass in either a tuple object or field arguments"
 
-
     @classmethod
     def get_table(cls):
         return cls.TABLE_NAME
@@ -364,6 +375,10 @@ class TableItem:
             return {k: self.row_tuple[k] for k in type(self).INDEX_KEYS}
         except KeyError as e:
             print("Row tuple does not contain index: {}".format(e))
+
+
+class NoIndexError(Exception):
+    pass
 
 
 class DuplicateError(Exception):

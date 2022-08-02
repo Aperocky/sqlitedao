@@ -66,7 +66,6 @@ class PlayerX(TableItem):
 
 zion = Player(name="Zion Williamson", position="PF", age=20, height="6-6")
 harden = Player(name="James Harden", position="SG", age=30, height="6-5")
-
 zionx = PlayerX(name="Zion Williamson", position="PF", age=20, height="6-6")
 
 def test_insert_item(xdao):
