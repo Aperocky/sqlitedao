@@ -270,6 +270,8 @@ class SqliteDao:
                 raise
 
     def insert_items(self, table_items):
+        if len(set([e.TABLE_NAME for e in table_items])) > 1:
+            raise ValueError("Items updated should be of the same type")
         self.insert_rows(table_items[0].get_table(), [item.get_row_tuple() for item in table_items])
 
     # Find item based on a index only table_item, returns the full item if found
@@ -286,12 +288,21 @@ class SqliteDao:
         return [class_type(row) for row in rows]
 
     def delete_item(self, table_item):
+        if not table_item.INDEX_KEYS:
+            raise NoIndexError("This table does not have index keys, and cannot delete individual items, use delete_rows instead")
         self.delete_rows(table_item.get_table(), table_item.get_index_dict())
 
     def update_item(self, table_item):
+        if not table_item.INDEX_KEYS:
+            raise NoIndexError("This table does not have index keys, and cannot update individual items")
         self.update_row(table_item.get_table(), table_item.get_row_tuple(), table_item.get_index_dict())
 
     def update_items(self, table_items):
+        # Enforce index key and same table
+        if not table_items[0].INDEX_KEYS:
+            raise NoIndexError("This table does not have index keys, and cannot update batched individual items")
+        if len(set([e.TABLE_NAME for e in table_items])) > 1:
+            raise ValueError("Items updated should be of the same type")
         self.update_many(table_items[0].get_table(), [item.get_row_tuple() for item in table_items], [item.get_index_dict() for item in table_items])
 
 

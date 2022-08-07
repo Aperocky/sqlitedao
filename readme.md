@@ -35,39 +35,7 @@ Or with a bit more control:
     }
     dao.create_table(TEST_TABLE_NAME, columns, create_table_indexes)
 
-INSERT:
-
-    lebron = {"name": "LeBron James", "position": "SF", "age": 35, "height": "6-8.5"}
-    kobe = {"name": "Kobe Bryant", "position":  "SG", "age": 41, "height": "6-6"}
-    jordan = {"name": "Michael Jordan", "position": "SG", "age": 56, "height": "6-6"}
-    dao.insert_rows(TEST_TABLE_NAME, [lebron, kobe, jordan])
-
-READ:
-
-    result = dao.search_table(TEST_TABLE_NAME, {"position": "SG"})
-    [{'name': 'Kobe Bryant', 'position': 'SG', 'age': 41, 'height': '6-6'},
-     {'name': 'Michael Jordan', 'position': 'SG', 'age': 56, 'height': '6-6'}]
-
-Or with more search operations:
-
-    result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_filter("age", 40, operator="<"))
-    result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_between("age", 37, 40))
-    result = dao.search_table(TEST_TABLE_NAME, SearchDict().add_filter("age", 40, operator="<"), group_by=["positions"])
-    result = dao.search_table(TEST_TABLE_NAME, {}, order_by=["age"])
-
-UPDATE:
-
-    dao.update_many(TEST_TABLE_NAME, [{"age": 30}, {"age": 40}], [{"name": "A"}, {"name": "B"}])
-
-`update_row`, `update_rows` is also available with slightly different functionality.
-
-DELETE:
-
-    dao.delete_rows(TEST_TABLE_NAME, {"position": "SG"})
-
-Same for update and deletion.
-
-Create classes inheriting `TableItem` easily and deal with even less code,
+Create ORM classes by inheriting `TableItem` easily and deal with even less code,
 
     dao.insert_item(item)
     dao.insert_items(items)
@@ -76,15 +44,4 @@ Create classes inheriting `TableItem` easily and deal with even less code,
     dao.find_item(item_with_only_index_populated)
     ...
 
-see `test/item_test.py` for example.
-
-## Helpers
-
-1. SearchDict: allow more comparators than "="
-
-2. ColumnDict: allow 'primary key && not null' to columns.
-
-* 1, 2 not needed for full functions
-
-3. TableItem: baseclass for python items <-> db row connection.
-
+see test files for example. This can greatly simplify and ease the creation cost for pet projects based on sqlite.
