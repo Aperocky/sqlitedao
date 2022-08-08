@@ -1,6 +1,6 @@
 ## SqliteDao
 
-![PyPI version](http://img.shields.io/pypi/v/sqlitedao.svg) &nbsp; ![Python 3.x](http://img.shields.io/badge/Python-3.x-green.svg) &nbsp; ![PyPI license](https://img.shields.io/github/license/mashape/apistatus.svg) &nbsp; ![Downloads](https://pepy.tech/badge/sqlitedao)] &nbsp; ![Unit Test](https://github.com/Aperocky/sqlitedao/workflows/Unit%20Test/badge.svg)
+![PyPI version](http://img.shields.io/pypi/v/sqlitedao.svg) &nbsp; ![Python 3.x](http://img.shields.io/badge/Python-3.x-green.svg) &nbsp; ![PyPI license](https://img.shields.io/github/license/mashape/apistatus.svg) &nbsp; ![Downloads](https://pepy.tech/badge/sqlitedao) &nbsp; ![Unit Test](https://github.com/Aperocky/sqlitedao/workflows/Unit%20Test/badge.svg)
 
 A simplified DAO for SQL abstraction for personal projects.
 
