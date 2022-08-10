@@ -5,7 +5,7 @@ with open("readme.md", encoding='utf-8') as f:
 
 setup(name='sqlitedao',
       version='0.5.1',
-      description='simple dao and ORM for sqlite',
+      description='simple DAO builder and abstraction for sqlite',
       author='Rocky Li',
       url='https://github.com/Aperocky/sqlitedao',
       author_email='aperocky@gmail.com',
