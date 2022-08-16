@@ -4,7 +4,7 @@ Testing more flexibility in table structure and items
 
 """
 
-from sqlitedao import SqliteDao, ColumnDict, TableItem, NoIndexError
+from sqlitedao import SqliteDao, ColumnDict, TableItem, NoIndexError, DuplicateError
 import os
 import pytest
 import uuid
@@ -23,8 +23,7 @@ def dao():
         os.remove(TEST_DB_NAME)
     # Pass dao instance to test
     dao = SqliteDao.get_instance(TEST_DB_NAME)
-    columns = ColumnDict()
-    columns\
+    columns = ColumnDict()\
         .add_column("name1", "text")\
         .add_column("name2", "text")\
         .add_column("relation", "integer")
@@ -47,12 +46,31 @@ def xdao():
         os.remove(TEST_DB_NAME)
     # Pass dao instance to test
     dao = SqliteDao.get_instance(TEST_DB_NAME)
-    columns = ColumnDict()
-    columns\
+    columns = ColumnDict()\
         .add_column("id", "text", primary_key=True)\
         .add_column("answer1", "text")\
         .add_column("answer2", "integer")
     dao.create_table(SURVEY_TABLE_NAME, columns)
+    yield dao
+    # Deconstruct
+    SqliteDao.terminate_instance(TEST_DB_NAME)
+    if os.path.exists(TEST_DB_NAME):
+        os.remove(TEST_DB_NAME)
+
+# Test creating tables with multiple primary keys
+@pytest.fixture
+def ydao():
+    # Before test
+    if os.path.exists(TEST_DB_NAME):
+        os.remove(TEST_DB_NAME)
+    # Pass dao instance to test
+    dao = SqliteDao.get_instance(TEST_DB_NAME)
+    columns = ColumnDict()\
+        .add_column("year", "integer", primary_key=True)\
+        .add_column("month", "integer", primary_key=True)\
+        .add_column("day", "integer", primary_key=True)\
+        .add_column("mood", "text")
+    dao.create_table("mood", columns)
     yield dao
     # Deconstruct
     SqliteDao.terminate_instance(TEST_DB_NAME)
@@ -108,6 +126,28 @@ class Survey(TableItem):
         self.answer2 = answer2
         self.row_tuple["answer1"] = answer1
         self.row_tuple["answer2"] = answer2
+
+
+class Mood(TableItem):
+
+    TABLE_NAME = "mood"
+    INDEX_KEYS = ["year", "month", "day"]
+    ALL_COLUMNS = {
+        "year": int,
+        "month": int,
+        "day": int,
+        "mood": str
+    }
+
+    def __init__(self, row_tuple=None, **kwargs):
+        super().__init__(row_tuple, **kwargs)
+        self.load_tuple()
+
+    def load_tuple(self):
+        self.year = self.row_tuple["year"]
+        self.month = self.row_tuple["month"]
+        self.day = self.row_tuple["day"]
+        self.mood = self.row_tuple["mood"]
 
 
 def test_item_creation_for_no_index_table(dao):
@@ -179,3 +219,13 @@ def test_refuting_insertion_for_items_of_different_type(xdao):
     rel1 = Relation(name1="US", name2="Russia", relation=2)
     with pytest.raises(ValueError) as e:
         xdao.insert_items([sur1, rel1])
+
+
+def test_insert_items_for_multiple_primary_key_cols(ydao):
+    mooda = Mood(year=2020, month=12, day=24, mood="happy")
+    moodb = Mood(year=2020, month=12, day=25, mood="happy")
+    moodc = Mood(year=2020, month=12, day=26, mood="sad")
+    ydao.insert_items([mooda, moodb, moodc])
+    with pytest.raises(DuplicateError) as e:
+        dupmood = Mood(year=2020, month=12, day=26, mood="happy")
+        ydao.insert_item(dupmood)

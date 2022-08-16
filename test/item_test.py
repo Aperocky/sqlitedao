@@ -1,3 +1,9 @@
+"""
+
+Test basic dao/orm functionalities.
+
+"""
+
 from sqlitedao import SqliteDao, TableItem, SearchDict, DuplicateError
 from .dao_test import prepopulated_dao
 from .dao_test import TEST_TABLE_NAME

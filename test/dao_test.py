@@ -34,8 +34,7 @@ def prepopulated_dao():
         os.remove(TEST_DB_NAME)
     # Pass dao instance to test
     dao = SqliteDao.get_instance(TEST_DB_NAME)
-    columns = ColumnDict()
-    columns\
+    columns = ColumnDict()\
         .add_column("name", "text", primary_key=True)\
         .add_column("position", "text")\
         .add_column("age", "integer")\
