@@ -3,7 +3,9 @@ from .dao_test import prepopulated_dao
 from .dao_test import TEST_TABLE_NAME
 import pytest
 
+
 class Player(TableItem):
+    # Old (<0.4.0 pattern, use PlayerX pattern below for more brevity)
 
     TABLE_NAME = TEST_TABLE_NAME
     INDEX_KEYS = ["name"]
