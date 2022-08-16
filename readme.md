@@ -12,6 +12,8 @@ Demo project: [sqlite_img_app](https://github.com/Aperocky/sqlite_img_demo)
 
 Create Table easily:
 
+    from sqlitedao import SqliteDao
+
     dao = SqliteDao.get_instance(DB_PATH)
 
     create_table_columns = {
@@ -23,6 +25,8 @@ Create Table easily:
     dao.create_table(TEST_TABLE_NAME, create_table_columns)
 
 Or with a bit more control:
+
+    from sqlitedao import ColumnDict
 
     columns = ColumnDict()
     columns\
@@ -37,11 +41,15 @@ Or with a bit more control:
 
 Retrieve items as a list of python dictionaries:
 
+    from sqlitedao import SearchDict
+
     search = SearchDict().add_filter("age", 50, operator=">")
     rows = xdao.search_table(TEST_TABLE_NAME, search)
     # [{"name": "Michael Jordan", "position": "SG", "age": 56, "height": "6-6"}]
 
 Create DAO classes by inheriting `TableItem` easily and deal with less code:
+
+    from sqlitedao import TableItem
 
     class Player(TableItem):
 
