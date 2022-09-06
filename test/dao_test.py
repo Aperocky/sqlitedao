@@ -108,6 +108,25 @@ def test_multiple_index_creation(dao):
     indexes = dao.get_schema(info="*", type="index")
     assert len(indexes) == 2
 
+def test_index_deletion(dao):
+    create_table_columns = {
+        "name": "text",
+        "position": "text",
+        "age": "integer",
+        "height": "text"
+    }
+    create_table_indexes = {
+        "name_index": ["name"],
+        "age_and_height_index": ["age", "height"]
+    }
+    dao.create_table(TEST_TABLE_NAME, create_table_columns, create_table_indexes)
+    indexes = dao.get_schema(info="*", type="index")
+    assert len(indexes) == 2
+    dao.drop_index(TEST_TABLE_NAME, "name_index")
+    indexes = dao.get_schema(info="*", type="index")
+    assert len(indexes) == 1
+    assert indexes[0]["name"] == "idx_players_age_and_height_index"
+
 def test_extended_column_creation(dao):
     columns = ColumnDict()
     columns\

@@ -51,8 +51,9 @@ class SqliteDao:
         query = "DROP TABLE {}".format(table_name)
         self.conn.execute(query)
 
-    def drop_index(self, index_name):
-        query = "DROP TABLE {}".format(index_name)
+    def drop_index(self, table_name, index_name):
+        index_name_actual = "idx_{}_{}".format(table_name, index_name)
+        query = "DROP INDEX {}".format(index_name_actual)
         self.conn.execute(query)
 
     def create_table(self, table_name, column_dict, index_dict=None):
