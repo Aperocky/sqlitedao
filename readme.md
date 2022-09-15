@@ -49,7 +49,7 @@ Retrieve items as a list of python dictionaries:
 
 Create DAO classes by inheriting `TableItem` easily and deal with less code:
 
-    from sqlitedao import TableItem
+    from sqlitedao import TableItem, SearchDict
 
     class Player(TableItem):
 
@@ -83,5 +83,10 @@ Create DAO classes by inheriting `TableItem` easily and deal with less code:
     dao.update_item(changed_item)
     dao.update_items(changed_items)
     dao.find_item(item_with_only_index_populated)
+
+    # Pagination with sqlite is easier than ever!
+    old = SearchDict().add_filter("age", 35, ">")
+    old_team_1 = dao.get_items_page(Player, old, None, limit = 10)
+    old_team_2 = dao.get_items_page(Player, old, old_team_1[-1], limit = 10)
 
 see test files for more examples. This can greatly simplify and ease the creation cost for pet projects based on sqlite.

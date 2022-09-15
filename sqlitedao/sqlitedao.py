@@ -288,6 +288,17 @@ class SqliteDao:
         rows = self.search_table(class_type.TABLE_NAME, search_dict, order_by=order_by, limit=limit, offset=offset, desc=desc)
         return [class_type(row) for row in rows]
 
+    def get_items_page(self, class_type, search_dict, last_item, desc=True, limit=50):
+        if not isinstance(search_dict, SearchDict):
+            raise ValueError("pagination search dict must be instance of sqlitedao.SearchDict")
+        if not last_item is None:
+            for index in class_type.INDEX_KEYS:
+                curr_val = last_item.row_tuple[index]
+                comp_char = "<" if desc else ">"
+                search_dict.add_filter(index, curr_val, comp_char)
+        rows = self.search_table(class_type.TABLE_NAME, search_dict, order_by=class_type.INDEX_KEYS, desc=desc, limit=limit)
+        return [class_type(row) for row in rows]
+
     def delete_item(self, table_item):
         if not table_item.INDEX_KEYS:
             raise NoIndexError("This table does not have index keys, and cannot delete individual items, use delete_rows instead")
