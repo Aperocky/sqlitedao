@@ -4,7 +4,7 @@ with open("readme.md", encoding='utf-8') as f:
     readme = f.read()
 
 setup(name='sqlitedao',
-      version='0.7.0',
+      version='0.7.1',
       description='simple DAO builder and abstraction for sqlite',
       author='Rocky Li',
       url='https://github.com/Aperocky/sqlitedao',

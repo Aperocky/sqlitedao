@@ -221,6 +221,17 @@ def test_refuting_insertion_for_items_of_different_type(xdao):
         xdao.insert_items([sur1, rel1])
 
 
+def test_unusual_char_in_key_string_delete(xdao):
+    bad_str = "http://s3.blabla.com/w%3D5^^c/==646e6932a21190--/haha.pdf?quack=2022-10-02-07_1dcfbbc475879"
+    sur1 = Survey(id=bad_str, answer1="whatnow")
+    xdao.insert_item(sur1)
+    found_items = xdao.get_items(Survey, {})
+    assert len(found_items) == 1
+    xdao.delete_item(sur1)
+    found_items = xdao.get_items(Survey, {})
+    assert len(found_items) == 0
+
+
 def test_insert_items_for_multiple_primary_key_cols(ydao):
     mooda = Mood(year=2020, month=12, day=24, mood="happy")
     moodb = Mood(year=2020, month=12, day=25, mood="happy")

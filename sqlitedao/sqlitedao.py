@@ -244,6 +244,8 @@ class SqliteDao:
                 self.populate_search_dict(key_strings, value_strings, k, v, extended_feature)
             query += " AND ".join(key_strings)
         cursor.execute(query, value_strings)
+        self.conn.commit()
+        cursor.close()
 
     def populate_search_dict(self, key_strings, value_strings, k, v, extended_feature):
         if extended_feature:
