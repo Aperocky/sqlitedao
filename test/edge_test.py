@@ -23,20 +23,20 @@ def dao():
         os.remove(TEST_DB_NAME)
     # Pass dao instance to test
     dao = SqliteDao.get_instance(TEST_DB_NAME)
-    columns = ColumnDict()\
-        .add_column("name1", "text")\
-        .add_column("name2", "text")\
+    columns = (
+        ColumnDict()
+        .add_column("name1", "text")
+        .add_column("name2", "text")
         .add_column("relation", "integer")
-    create_table_indexes = {
-        "name1_index": ["name1"],
-        "name2_index": ["name2"]
-    }
+    )
+    create_table_indexes = {"name1_index": ["name1"], "name2_index": ["name2"]}
     dao.create_table(TEST_TABLE_NAME, columns, create_table_indexes)
     yield dao
     # Deconstruct
     SqliteDao.terminate_instance(TEST_DB_NAME)
     if os.path.exists(TEST_DB_NAME):
         os.remove(TEST_DB_NAME)
+
 
 # Test creating tables that accept nullable values
 @pytest.fixture
@@ -46,16 +46,19 @@ def xdao():
         os.remove(TEST_DB_NAME)
     # Pass dao instance to test
     dao = SqliteDao.get_instance(TEST_DB_NAME)
-    columns = ColumnDict()\
-        .add_column("id", "text", primary_key=True)\
-        .add_column("answer1", "text")\
+    columns = (
+        ColumnDict()
+        .add_column("id", "text", primary_key=True)
+        .add_column("answer1", "text")
         .add_column("answer2", "integer")
+    )
     dao.create_table(SURVEY_TABLE_NAME, columns)
     yield dao
     # Deconstruct
     SqliteDao.terminate_instance(TEST_DB_NAME)
     if os.path.exists(TEST_DB_NAME):
         os.remove(TEST_DB_NAME)
+
 
 # Test creating tables with multiple primary keys
 @pytest.fixture
@@ -65,11 +68,13 @@ def ydao():
         os.remove(TEST_DB_NAME)
     # Pass dao instance to test
     dao = SqliteDao.get_instance(TEST_DB_NAME)
-    columns = ColumnDict()\
-        .add_column("year", "integer", primary_key=True)\
-        .add_column("month", "integer", primary_key=True)\
-        .add_column("day", "integer", primary_key=True)\
+    columns = (
+        ColumnDict()
+        .add_column("year", "integer", primary_key=True)
+        .add_column("month", "integer", primary_key=True)
+        .add_column("day", "integer", primary_key=True)
         .add_column("mood", "text")
+    )
     dao.create_table("mood", columns)
     yield dao
     # Deconstruct
@@ -79,14 +84,9 @@ def ydao():
 
 
 class Relation(TableItem):
-
     TABLE_NAME = TEST_TABLE_NAME
     INDEX_KEYS = []
-    ALL_COLUMNS = {
-        "name1": str,
-        "name2": str,
-        "relation": int
-    }
+    ALL_COLUMNS = {"name1": str, "name2": str, "relation": int}
 
     def __init__(self, row_tuple=None, **kwargs):
         super().__init__(row_tuple, **kwargs)
@@ -103,14 +103,9 @@ class Relation(TableItem):
 
 
 class Survey(TableItem):
-
     TABLE_NAME = SURVEY_TABLE_NAME
     INDEX_KEYS = ["id"]
-    ALL_COLUMNS = {
-        "id": str,
-        "answer1": str,
-        "answer2": int
-    }
+    ALL_COLUMNS = {"id": str, "answer1": str, "answer2": int}
 
     def __init__(self, row_tuple=None, **kwargs):
         super().__init__(row_tuple, **kwargs)
@@ -129,15 +124,9 @@ class Survey(TableItem):
 
 
 class Mood(TableItem):
-
     TABLE_NAME = "mood"
     INDEX_KEYS = ["year", "month", "day"]
-    ALL_COLUMNS = {
-        "year": int,
-        "month": int,
-        "day": int,
-        "mood": str
-    }
+    ALL_COLUMNS = {"year": int, "month": int, "day": int, "mood": str}
 
     def __init__(self, row_tuple=None, **kwargs):
         super().__init__(row_tuple, **kwargs)
@@ -195,8 +184,8 @@ def test_insert_item_with_null_fields(xdao):
     sur1 = Survey(id=curr_id)
     xdao.insert_item(sur1)
     found_item = xdao.find_item(Survey(id=curr_id))
-    assert found_item.answer1 == None
-    assert found_item.answer2 == None
+    assert found_item.answer1 is None
+    assert found_item.answer2 is None
     assert found_item.row_tuple["answer1"] is None
     assert found_item.row_tuple["answer2"] is None
 

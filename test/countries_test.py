@@ -47,12 +47,14 @@ def get_cdao():
     if os.path.exists(TEST_DB_NAME):
         os.remove(TEST_DB_NAME)
     dao = SqliteDao.get_instance(TEST_DB_NAME)
-    columns = ColumnDict()\
-        .add_column("name", "text", primary_key=True)\
-        .add_column("area", "real")\
-        .add_column("population", "real")\
-        .add_column("gdp", "real")\
+    columns = (
+        ColumnDict()
+        .add_column("name", "text", primary_key=True)
+        .add_column("area", "real")
+        .add_column("population", "real")
+        .add_column("gdp", "real")
         .add_column("gdp_per_capita", "real")
+    )
     dao.create_table("countries", columns)
     yield dao
     SqliteDao.terminate_instance(TEST_DB_NAME)
@@ -64,7 +66,13 @@ def get_cdao():
 def prepared_cdao(data, cdao):
     for country in data:
         try:
-            country = Country(name=country["country"], area=country['Surface area (km2)'], population=country['Population in thousands (2017)'], gdp=country['GDP: Gross domestic product (million current US$)'], gdp_per_capita=country['GDP per capita (current US$)'])
+            country = Country(
+                name=country["country"],
+                area=country["Surface area (km2)"],
+                population=country["Population in thousands (2017)"],
+                gdp=country["GDP: Gross domestic product (million current US$)"],
+                gdp_per_capita=country["GDP per capita (current US$)"],
+            )
             cdao.insert_item(country)
         except ValueError as e:
             pass
@@ -75,7 +83,13 @@ def test_loading_from_csv(data, cdao):
     # This is not using sqlite default loading of csv, rather just testing/example manual loading
     for country in data:
         try:
-            country = Country(name=country["country"], area=country['Surface area (km2)'], population=country['Population in thousands (2017)'], gdp=country['GDP: Gross domestic product (million current US$)'], gdp_per_capita=country['GDP per capita (current US$)'])
+            country = Country(
+                name=country["country"],
+                area=country["Surface area (km2)"],
+                population=country["Population in thousands (2017)"],
+                gdp=country["GDP: Gross domestic product (million current US$)"],
+                gdp_per_capita=country["GDP per capita (current US$)"],
+            )
             cdao.insert_item(country)
         except ValueError as e:
             # Holy See has non-float count
@@ -86,29 +100,73 @@ def test_loading_from_csv(data, cdao):
 
 
 def test_basic_item_pagination(prepared_cdao):
-    countries = prepared_cdao.get_items_page(Country, SearchDict(), None, limit=10, desc=False)
-    alphabetical_firsts = ['Afghanistan', 'Albania', 'Algeria', 'American Samoa', 'Andorra', 'Angola', 'Anguilla', 'Antigua and Barbuda', 'Argentina', 'Armenia']
+    countries = prepared_cdao.get_items_page(
+        Country, SearchDict(), None, limit=10, desc=False
+    )
+    alphabetical_firsts = [
+        "Afghanistan",
+        "Albania",
+        "Algeria",
+        "American Samoa",
+        "Andorra",
+        "Angola",
+        "Anguilla",
+        "Antigua and Barbuda",
+        "Argentina",
+        "Armenia",
+    ]
     assert alphabetical_firsts == [c.name for c in countries]
-    next_countries = prepared_cdao.get_items_page(Country, SearchDict(), countries[-1], limit=10, desc=False)
-    alphabetical_seconds = ['Aruba', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium']
+    next_countries = prepared_cdao.get_items_page(
+        Country, SearchDict(), countries[-1], limit=10, desc=False
+    )
+    alphabetical_seconds = [
+        "Aruba",
+        "Australia",
+        "Austria",
+        "Azerbaijan",
+        "Bahamas",
+        "Bahrain",
+        "Bangladesh",
+        "Barbados",
+        "Belarus",
+        "Belgium",
+    ]
     assert alphabetical_seconds == [c.name for c in next_countries]
 
 
 def test_item_pagination_with_size(prepared_cdao):
     size_requirement = SearchDict().add_filter("area", 100000, ">")
-    alpha = prepared_cdao.get_items_page(Country, size_requirement, None, limit=5, desc=False)
-    beta = prepared_cdao.get_items_page(Country, size_requirement, alpha[-1], limit=5, desc=False)
-    alpha_expected = ['Afghanistan', 'Algeria', 'Angola', 'Argentina', 'Australia']
-    beta_expected = ['Bangladesh', 'Belarus', 'Benin', 'Bolivia (Plurinational State of)', 'Botswana']
+    alpha = prepared_cdao.get_items_page(
+        Country, size_requirement, None, limit=5, desc=False
+    )
+    beta = prepared_cdao.get_items_page(
+        Country, size_requirement, alpha[-1], limit=5, desc=False
+    )
+    alpha_expected = ["Afghanistan", "Algeria", "Angola", "Argentina", "Australia"]
+    beta_expected = [
+        "Bangladesh",
+        "Belarus",
+        "Benin",
+        "Bolivia (Plurinational State of)",
+        "Botswana",
+    ]
     assert alpha_expected == [c.name for c in alpha]
     assert beta_expected == [c.name for c in beta]
 
 
 def test_item_pagination_with_multiple_criteria(prepared_cdao):
-    large_and_rich = SearchDict().add_filter("area", 100000, ">").add_filter("gdp_per_capita", 10000, ">")
-    alpha = prepared_cdao.get_items_page(Country, large_and_rich, None, limit=5, desc=False)
-    beta = prepared_cdao.get_items_page(Country, large_and_rich, alpha[-1], limit=5, desc=False)
-    alpha_expected = ['Argentina', 'Australia', 'Canada', 'Chile', 'Finland']
-    beta_expected = ['France', 'Germany', 'Greece', 'Greenland', 'Iceland']
+    large_and_rich = (
+        SearchDict()
+        .add_filter("area", 100000, ">")
+        .add_filter("gdp_per_capita", 10000, ">")
+    )
+    alpha = prepared_cdao.get_items_page(
+        Country, large_and_rich, None, limit=5, desc=False
+    )
+    beta = prepared_cdao.get_items_page(
+        Country, large_and_rich, alpha[-1], limit=5, desc=False
+    )
+    alpha_expected = ["Argentina", "Australia", "Canada", "Chile", "Finland"]
+    beta_expected = ["France", "Germany", "Greece", "Greenland", "Iceland"]
     assert alpha_expected == [c.name for c in alpha]
     assert beta_expected == [c.name for c in beta]
