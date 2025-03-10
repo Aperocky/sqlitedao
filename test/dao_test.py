@@ -79,6 +79,25 @@ def test_basic_table_creation(dao):
     assert not dao.is_table_exist(TEST_TABLE_NAME)
 
 
+def test_table_creation_with_bad_names(dao):
+    tables = dao.get_schema()  # Should be empty
+    assert len(dao.get_schema()) == 0
+    create_table_columns = {
+        "pkey": "text",
+        "rval": "text",
+    }
+    with pytest.raises(ValueError):
+        dao.create_table("", create_table_columns)
+    with pytest.raises(ValueError):
+        dao.create_table("only microsoft like spaces in db names", create_table_columns)
+    with pytest.raises(ValueError):
+        dao.create_table("C:/totally/sane/file/system", create_table_columns)
+    with pytest.raises(ValueError):
+        dao.create_table(
+            "random (pkey); DROP TABLE sqlite_master; ", create_table_columns
+        )
+
+
 def test_basic_index_creation(dao):
     create_table_columns = {
         "name": "text",

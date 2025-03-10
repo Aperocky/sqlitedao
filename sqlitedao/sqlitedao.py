@@ -1,4 +1,5 @@
 import sqlite3
+from sqlitedao import sanitize
 
 
 class SqliteDao:
@@ -36,7 +37,9 @@ class SqliteDao:
         return table is not None
 
     def get_row_count(self, table_name):
-        query = "SELECT count(*) from {}".format(table_name)
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
+        query = f"SELECT count(*) from {quoted_table_name}"
         cursor = self.conn.execute(query)
         num_count = cursor.fetchone()[0]
         cursor.close()
@@ -48,17 +51,25 @@ class SqliteDao:
         return [dict(t) for t in cursor.fetchall()]
 
     def drop_table(self, table_name):
-        query = "DROP TABLE {}".format(table_name)
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
+        query = f"DROP TABLE {quoted_table_name}"
         self.conn.execute(query)
 
     def drop_index(self, table_name, index_name):
+        sanitize.validate_table_name(table_name)
+        sanitize.validate_table_name(index_name)
         index_name_actual = "idx_{}_{}".format(table_name, index_name)
+        quoted_index_name = sanitize.quote_string(index_name_actual)
         query = "DROP INDEX {}".format(index_name_actual)
+        query = f"DROP INDEX {quoted_index_name}"
         self.conn.execute(query)
 
     def create_table(self, table_name, column_dict, index_dict=None):
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
         extended_feature = isinstance(column_dict, ColumnDict)
-        query = "CREATE TABLE IF NOT EXISTS {} ( ".format(table_name)
+        query = f"CREATE TABLE IF NOT EXISTS {quoted_table_name} ( "
         columns = []
         primary_keys = []
         for k, v in column_dict.items():
@@ -80,9 +91,8 @@ class SqliteDao:
                     raise ValueError("Index need a list of columns")
                 index_string = ",".join(v)
                 index_name = "idx_{}_".format(table_name) + k
-                index_query = "CREATE INDEX IF NOT EXISTS {} ON {} ({})".format(
-                    index_name, table_name, index_string
-                )
+                quoted_index_name = sanitize.quote_string(index_name)
+                index_query = f"CREATE INDEX IF NOT EXISTS {quoted_index_name} ON {quoted_table_name} ({index_string})"
                 cursor.execute(index_query)
         self.conn.commit()
         cursor.close()
@@ -112,8 +122,10 @@ class SqliteDao:
             )
             return groupby_query
 
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
         cursor = self.conn.cursor()
-        query = "SELECT * from {}".format(table_name)
+        query = f"SELECT * from {quoted_table_name}"
         if not search_dict:
             if group_by is not None:
                 query = group_by_ops()
@@ -159,7 +171,9 @@ class SqliteDao:
         # Row values are a dictionary representing the row.
         if not isinstance(row_tuple, dict):
             raise ValueError("row_tuple should be a dictionary")
-        query = "INSERT INTO {} ".format(table_name)
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
+        query = f"INSERT INTO {quoted_table_name} "
         keys = row_tuple.keys()
         values = list(row_tuple.values())
         query += "(" + ",".join(keys) + ")"
@@ -183,7 +197,9 @@ class SqliteDao:
             if row_tuple.keys() != keys:
                 raise ValueError("batch should have same keys")
             multiple_values.append(list(row_tuple.values()))
-        query = "INSERT OR IGNORE INTO {} ".format(table_name)
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
+        query = f"INSERT OR IGNORE INTO {quoted_table_name} "
         query += "(" + ",".join(keys) + ")"
         query += " VALUES "
         query += "(" + ",".join(["?"] * len(keys)) + ")"
@@ -197,7 +213,9 @@ class SqliteDao:
             return
         if not search_dict:
             raise ValueError("must apply search conditions")
-        query = "UPDATE {} SET ".format(table_name)
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
+        query = f"UPDATE {quoted_table_name} SET "
         set_strings = []
         search_strings = []
         value_strings = []
@@ -226,7 +244,9 @@ class SqliteDao:
         ]
         set_strings = ["{}=?".format(e) for e in set_columns]
         search_strings = ["{}=?".format(e) for e in search_columns]
-        query = "UPDATE {} SET ".format(table_name)
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
+        query = f"UPDATE {quoted_table_name} SET "
         query += ", ".join(set_strings) + " WHERE "
         query += " AND ".join(search_strings)
         cursor = self.conn.cursor()
@@ -239,7 +259,9 @@ class SqliteDao:
         extended_feature = isinstance(search_dict, SearchDict)
         if not update_dict:
             return
-        query = "UPDATE {} SET ".format(table_name)
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
+        query = f"UPDATE {quoted_table_name} SET "
         set_strings = []
         search_strings = []
         value_strings = []
@@ -262,7 +284,9 @@ class SqliteDao:
     def delete_rows(self, table_name, search_dict):
         extended_feature = isinstance(search_dict, SearchDict)
         cursor = self.conn.cursor()
-        query = "DELETE FROM {}".format(table_name)
+        sanitize.validate_table_name(table_name)
+        quoted_table_name = sanitize.quote_string(table_name)
+        query = f"DELETE FROM {quoted_table_name}"
         key_strings = []
         value_strings = []
         if len(search_dict) > 0:
