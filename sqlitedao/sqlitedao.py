@@ -1,7 +1,7 @@
 import sqlite3
 
-class SqliteDao:
 
+class SqliteDao:
     # One connection per database of sqlite
     INSTANCE_MAP = {}
 
@@ -33,7 +33,7 @@ class SqliteDao:
         cursor = self.conn.execute(query, (table_name,))
         table = cursor.fetchone()
         cursor.close()
-        return not (table == None)
+        return table is not None
 
     def get_row_count(self, table_name):
         query = "SELECT count(*) from {}".format(table_name)
@@ -80,18 +80,36 @@ class SqliteDao:
                     raise ValueError("Index need a list of columns")
                 index_string = ",".join(v)
                 index_name = "idx_{}_".format(table_name) + k
-                index_query = "CREATE INDEX IF NOT EXISTS {} ON {} ({})".format(index_name, table_name, index_string)
+                index_query = "CREATE INDEX IF NOT EXISTS {} ON {} ({})".format(
+                    index_name, table_name, index_string
+                )
                 cursor.execute(index_query)
         self.conn.commit()
         cursor.close()
 
     # fetch rows where search_dict is satisfied
-    def search_table(self, table_name, search_dict, order_by=None, group_by=None, limit=None, offset=None, desc=True, debug=False):
+    def search_table(
+        self,
+        table_name,
+        search_dict,
+        order_by=None,
+        group_by=None,
+        limit=None,
+        offset=None,
+        desc=True,
+        debug=False,
+    ):
         def group_by_ops():
+            if group_by is None:
+                return ""
             select_clause = query.split("from")[0]
-            substitute_select_clause = "SELECT count(*) AS count,{} ".format(",".join(group_by))
+            substitute_select_clause = "SELECT count(*) AS count,{} ".format(
+                ",".join(group_by)
+            )
             groupby_query = query.replace(select_clause, substitute_select_clause)
-            groupby_query += " GROUP BY {}".format(",".join(group_by)) + " ORDER BY count DESC"
+            groupby_query += (
+                " GROUP BY {}".format(",".join(group_by)) + " ORDER BY count DESC"
+            )
             return groupby_query
 
         cursor = self.conn.cursor()
@@ -117,7 +135,9 @@ class SqliteDao:
         key_strings = []
         value_strings = []
         for k, v in search_dict.items():
-            self.populate_search_dict(key_strings, value_strings, k, v, extended_feature)
+            self.populate_search_dict(
+                key_strings, value_strings, k, v, extended_feature
+            )
         query += " AND ".join(key_strings)
         if group_by is not None:
             query = group_by_ops()
@@ -150,7 +170,9 @@ class SqliteDao:
             cursor.execute(query, values)
             self.conn.commit()
         except sqlite3.IntegrityError as e:
-            raise DuplicateError("Insertion violates uniqueness constraint: {}".format(e))
+            raise DuplicateError(
+                "Insertion violates uniqueness constraint: {}".format(e)
+            )
         cursor.close()
 
     def insert_rows(self, table_name, row_tuples):
@@ -198,7 +220,10 @@ class SqliteDao:
         # Sanitize inputs! Assumed to be only used for table items.
         set_columns = update_dicts[0].keys()
         search_columns = search_dicts[0].keys()
-        values = [ list(update.values()) + list(search.values()) for update, search in zip(update_dicts, search_dicts) ]
+        values = [
+            list(update.values()) + list(search.values())
+            for update, search in zip(update_dicts, search_dicts)
+        ]
         set_strings = ["{}=?".format(e) for e in set_columns]
         search_strings = ["{}=?".format(e) for e in search_columns]
         query = "UPDATE {} SET ".format(table_name)
@@ -222,7 +247,9 @@ class SqliteDao:
             set_strings.append("{}=?".format(k))
             value_strings.append(v)
         for k, v in search_dict.items():
-            self.populate_search_dict(search_strings, value_strings, k, v, extended_feature)
+            self.populate_search_dict(
+                search_strings, value_strings, k, v, extended_feature
+            )
         query += ", ".join(set_strings)
         if search_strings:
             query += " WHERE "
@@ -241,7 +268,9 @@ class SqliteDao:
         if len(search_dict) > 0:
             query += " WHERE "
             for k, v in search_dict.items():
-                self.populate_search_dict(key_strings, value_strings, k, v, extended_feature)
+                self.populate_search_dict(
+                    key_strings, value_strings, k, v, extended_feature
+                )
             query += " AND ".join(key_strings)
         cursor.execute(query, value_strings)
         self.conn.commit()
@@ -275,58 +304,92 @@ class SqliteDao:
     def insert_items(self, table_items):
         if len(set([e.TABLE_NAME for e in table_items])) > 1:
             raise ValueError("Items updated should be of the same type")
-        self.insert_rows(table_items[0].get_table(), [item.get_row_tuple() for item in table_items])
+        self.insert_rows(
+            table_items[0].get_table(), [item.get_row_tuple() for item in table_items]
+        )
 
     # Find item based on a index only table_item, returns the full item if found
     def find_item(self, table_item):
         if not table_item.INDEX_KEYS:
-            raise NoIndexError("This table does not have index keys specified, use get_items instead")
+            raise NoIndexError(
+                "This table does not have index keys specified, use get_items instead"
+            )
         result = self.search_table(table_item.get_table(), table_item.get_index_dict())
         if result:
             return type(table_item)(result[0])
         return None
 
-    def get_items(self, class_type, search_dict, order_by=None, limit=None, offset=None, desc=True):
-        rows = self.search_table(class_type.TABLE_NAME, search_dict, order_by=order_by, limit=limit, offset=offset, desc=desc)
+    def get_items(
+        self, class_type, search_dict, order_by=None, limit=None, offset=None, desc=True
+    ):
+        rows = self.search_table(
+            class_type.TABLE_NAME,
+            search_dict,
+            order_by=order_by,
+            limit=limit,
+            offset=offset,
+            desc=desc,
+        )
         return [class_type(row) for row in rows]
 
     def get_items_page(self, class_type, search_dict, last_item, desc=True, limit=50):
         if not isinstance(search_dict, SearchDict):
-            raise ValueError("pagination search dict must be instance of sqlitedao.SearchDict")
-        if not last_item is None:
+            raise ValueError(
+                "pagination search dict must be instance of sqlitedao.SearchDict"
+            )
+        if last_item is not None:
             for index in class_type.INDEX_KEYS:
                 curr_val = last_item.row_tuple[index]
                 comp_char = "<" if desc else ">"
                 search_dict.add_filter(index, curr_val, comp_char)
-        rows = self.search_table(class_type.TABLE_NAME, search_dict, order_by=class_type.INDEX_KEYS, desc=desc, limit=limit)
+        rows = self.search_table(
+            class_type.TABLE_NAME,
+            search_dict,
+            order_by=class_type.INDEX_KEYS,
+            desc=desc,
+            limit=limit,
+        )
         return [class_type(row) for row in rows]
 
     def delete_item(self, table_item):
         if not table_item.INDEX_KEYS:
-            raise NoIndexError("This table does not have index keys, and cannot delete individual items, use delete_rows instead")
+            raise NoIndexError(
+                "This table does not have index keys, and cannot delete individual items, use delete_rows instead"
+            )
         self.delete_rows(table_item.get_table(), table_item.get_index_dict())
 
     def update_item(self, table_item):
         if not table_item.INDEX_KEYS:
-            raise NoIndexError("This table does not have index keys, and cannot update individual items")
-        self.update_row(table_item.get_table(), table_item.get_row_tuple(), table_item.get_index_dict())
+            raise NoIndexError(
+                "This table does not have index keys, and cannot update individual items"
+            )
+        self.update_row(
+            table_item.get_table(),
+            table_item.get_row_tuple(),
+            table_item.get_index_dict(),
+        )
 
     def update_items(self, table_items):
         # Enforce index key and same table
         if not table_items[0].INDEX_KEYS:
-            raise NoIndexError("This table does not have index keys, and cannot update batched individual items")
+            raise NoIndexError(
+                "This table does not have index keys, and cannot update batched individual items"
+            )
         if len(set([e.TABLE_NAME for e in table_items])) > 1:
             raise ValueError("Items updated should be of the same type")
-        self.update_many(table_items[0].get_table(), [item.get_row_tuple() for item in table_items], [item.get_index_dict() for item in table_items])
+        self.update_many(
+            table_items[0].get_table(),
+            [item.get_row_tuple() for item in table_items],
+            [item.get_index_dict() for item in table_items],
+        )
 
 
 class SearchDict(dict):
-
     def add_filter(self, column_name, value, operator="="):
         self[column_name] = {
             "statement_type": "comparison",
             "value": value,
-            "operator": operator
+            "operator": operator,
         }
         return self
 
@@ -334,7 +397,7 @@ class SearchDict(dict):
         self[column_name] = {
             "statement_type": "between",
             "value_low": value_low,
-            "value_high": value_high
+            "value_high": value_high,
         }
 
     @staticmethod
@@ -343,7 +406,6 @@ class SearchDict(dict):
 
 
 class ColumnDict(dict):
-
     @staticmethod
     def to_query(key, value):
         query = "{} {} ".format(key, value["type"])
@@ -351,20 +413,21 @@ class ColumnDict(dict):
             query += value["additional_attributes"]
         return query
 
-    def add_column(self, column_name, data_type, additional_attributes=None, primary_key=False):
+    def add_column(
+        self, column_name, data_type, additional_attributes=None, primary_key=False
+    ):
         self[column_name] = {
             "type": data_type,
             "additional_attributes": additional_attributes,
-            "primary_key": primary_key
+            "primary_key": primary_key,
         }
         return self
 
 
 class TableItem:
-
     TABLE_NAME = "table_this_item_belong_to"
     INDEX_KEYS = ["dummy_index_1"]
-    ALL_COLUMNS = {} # column name to type map
+    ALL_COLUMNS = {}  # column name to type map
 
     # Row_tuple builds the correspondence to table
     def __init__(self, row_tuple=None, **kwargs):
@@ -378,12 +441,12 @@ class TableItem:
                     row_tuple[key] = ALL_COLUMNS[key](val)
             for index in type(self).INDEX_KEYS:
                 if index not in row_tuple:
-                    raise "ALL_COLUMNS must contain index fields"
+                    raise ValueError("ALL_COLUMNS must contain index fields")
                 if row_tuple[index] is None:
-                    raise "index field must be populated"
+                    raise ValueError("index field must be populated")
             self.row_tuple = row_tuple
         else:
-            raise "Must pass in either a tuple object or field arguments"
+            raise ValueError("Must pass in either a tuple object or field arguments")
 
     @classmethod
     def get_table(cls):
