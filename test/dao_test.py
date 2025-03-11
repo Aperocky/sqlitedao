@@ -7,6 +7,7 @@ Test create table, index, list tables functionalities
 from sqlitedao import SqliteDao, ColumnDict, SearchDict
 import os
 import pytest
+import sqlite3
 
 # Some mock data
 TEST_DB_NAME = "test.db"
@@ -182,8 +183,7 @@ def test_regular_insert_and_search(dao):
     columns.add_column("name", "text", "PRIMARY KEY").add_column(
         "position", "text"
     ).add_column("age", "integer").add_column("height", "text")
-    create_table_indexes = {"name_index": ["name"]}
-    dao.create_table(TEST_TABLE_NAME, columns, create_table_indexes)
+    dao.create_table(TEST_TABLE_NAME, columns)
     dao.insert_row(TEST_TABLE_NAME, lebron)
     dao.insert_row("Players", kobe)
     dao.insert_row("Players", jordan)
@@ -191,6 +191,23 @@ def test_regular_insert_and_search(dao):
     assert lebron == result[0]
     result = dao.search_table(TEST_TABLE_NAME, {"position": "SG"})
     assert len(result) == 2
+
+
+def test_create_table_index(dao):
+    columns = ColumnDict()
+    columns.add_column("name", "text", "PRIMARY KEY")
+    columns.add_column("position", "text")
+    columns.add_column("age", "integer")
+    columns.add_column("height", "text")
+    create_table_indexes = {
+        "name_index": ["name"],
+        "name_and_age_index": ["name", "age"],
+    }
+    dao.create_table(TEST_TABLE_NAME, columns, create_table_indexes)
+    dao.drop_index(TEST_TABLE_NAME, "name_index")
+    dao.drop_index(TEST_TABLE_NAME, "name_and_age_index")
+    with pytest.raises(sqlite3.OperationalError) as e:
+        dao.drop_index(TEST_TABLE_NAME, "none_existent_index")
 
 
 def test_batch_insert(dao):

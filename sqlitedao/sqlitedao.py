@@ -449,12 +449,14 @@ class ColumnDict(dict):
 
 
 class TableItem:
-    TABLE_NAME = "table_this_item_belong_to"
-    INDEX_KEYS = ["dummy_index_1"]
-    ALL_COLUMNS = {}  # column name to type map
+    TABLE_NAME = None  # Must be set to the table name in subclasses
+    INDEX_KEYS = []  # Set to list of index columns in subclasses
+    ALL_COLUMNS = {}  # Set to column name -> type mapping in subclasses
 
     # Row_tuple builds the correspondence to table
     def __init__(self, row_tuple=None, **kwargs):
+        if self.TABLE_NAME is None:
+            raise NotImplementedError("Subclasses must define TABLE_NAME")
         if row_tuple:
             self.row_tuple = row_tuple
         elif len(kwargs) and type(self).ALL_COLUMNS:
